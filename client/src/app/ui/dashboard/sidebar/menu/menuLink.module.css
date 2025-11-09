@@ -1,0 +1,31 @@
+.container {
+  height: 60px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 2px 0px;
+  border-radius: 6px;
+  color: #a4b1cd;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  border-bottom: 1px solid #334155;
+}
+
+.container svg {
+  font-size: 20px;
+  color: #a4b1cd;
+}
+
+.container:hover,
+.active {
+  background-color: #1e293b;
+}
+
+.active {
+  color: #fff;
+}
+
+.active svg {
+  color: #fff;
+}

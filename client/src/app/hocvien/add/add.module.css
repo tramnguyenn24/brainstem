@@ -1,0 +1,115 @@
+.container {
+    padding: 20px;
+    background-color: var(--bgSoft);
+    border-radius: 10px;
+    margin-top: 20px;
+  }
+
+.title {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 24px;
+  }
+  
+  .form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    max-width: 500px;
+    margin: 0 auto;
+  }
+  
+  .formGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .formGroup label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+  }
+  
+  .formGroup input,
+  .formGroup select {
+    padding: 10px;
+    background-color: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    font-size: 14px;
+  }
+  
+  .formGroup input:focus,
+  .formGroup select:focus {
+    outline: none;
+    border-color: #5d57c9;
+  }
+
+  /* Error styles for validation */
+  .errorInput {
+    border-color: #dc3545 !important;
+    background-color: #fff5f5;
+  }
+
+  .errorInput:focus {
+    border-color: #dc3545 !important;
+    box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.25);
+  }
+
+  .errorText {
+    color: #dc3545;
+    font-size: 12px;
+    font-weight: 400;
+    margin-top: 4px;
+  }
+  
+  .buttonGroup {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 20px;
+  }
+  
+  .submitButton,
+  .cancelButton {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background-color 0.2s;
+  }
+  
+  .submitButton {
+    background-color: #5d57c9;
+    color: white;
+  }
+
+  .submitButton:hover:not(:disabled) {
+    background-color: #4a45a0;
+  }
+
+  .submitButton:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+  
+  .cancelButton {
+    background-color: #dc3545;
+    color: white;
+  }
+  
+  .cancelButton:hover:not(:disabled) {
+    background-color: #c82333;
+  }
+
+  .cancelButton:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+    opacity: 0.6;
+  }

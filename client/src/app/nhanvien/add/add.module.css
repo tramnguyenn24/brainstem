@@ -1,0 +1,150 @@
+.container {
+  padding: 20px;
+  background-color: var(--bgSoft);
+  border-radius: 10px;
+  margin-top: 20px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.formGroup label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.formGroup input,
+.formGroup select,
+.formGroup textarea {
+  padding: 10px;
+  background-color: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+/* Style for number input */
+.formGroup input[type="number"] {
+  -moz-appearance: textfield; /* Firefox */
+  appearance: textfield;
+  padding-right: 40px; /* Make room for the spinner */
+  position: relative;
+}
+
+/* Remove spinner buttons for Chrome, Safari, Edge, Opera */
+.formGroup input[type="number"]::-webkit-outer-spin-button,
+.formGroup input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Custom number input container */
+.formGroup input[type="number"] {
+  position: relative;
+}
+
+/* Custom spinner buttons */
+.formGroup input[type="number"]::before,
+.formGroup input[type="number"]::after {
+  content: '';
+  position: absolute;
+  right: 10px;
+  width: 20px;
+  height: 20px;
+  pointer-events: none;
+}
+
+.formGroup input[type="number"]::before {
+  top: 5px;
+  border-bottom: 1px solid var(--text);
+}
+
+.formGroup input[type="number"]::after {
+  bottom: 5px;
+  border-top: 1px solid var(--text);
+}
+
+.formGroup textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.formGroup input:focus,
+.formGroup select:focus,
+.formGroup textarea:focus {
+  outline: none;
+  border-color: #5d57c9;
+}
+
+.buttonGroup {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+.submitButton,
+.cancelButton {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.submitButton {
+  background-color: #5d57c9;
+  color: white;
+}
+
+.submitButton:hover {
+  background-color: #4a45a0;
+}
+
+.cancelButton {
+  background-color: #dc3545;
+  color: white;
+}
+
+.cancelButton:hover {
+  background-color: #c82333;
+}
+
+.errorText {
+  color: #dc3545;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+  font-style: italic;
+  animation: fadeIn 0.3s ease-in;
+}
+
+.errorInput:focus {
+  box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+  border-color: #dc3545 !important;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

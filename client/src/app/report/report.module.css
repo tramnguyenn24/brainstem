@@ -1,0 +1,394 @@
+.container {
+    padding: 20px;
+    background-color: var(--bgSoft);
+    border-radius: 10px;
+    margin-top: 20px;
+}
+
+.top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.table td {
+    padding: 12px;
+    border-bottom: 1px solid #ccc;
+    color: var(--text);
+    vertical-align: top;
+}
+
+.table thead td {
+    font-weight: bold;
+    background-color: #333;
+    color: white;
+}
+
+.status {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    text-transform: uppercase;
+    font-weight: bold;
+    display: inline-block;
+}
+
+/* Status color classes */
+.statusCompleted {
+    background-color: rgba(0, 128, 0, 0.1);
+    color: green;
+    border: 1px solid green;
+}
+
+.statusPaid {
+    background-color: rgba(0, 100, 200, 0.1);
+    color: #0064c8;
+    border: 1px solid #0064c8;
+}
+
+.statusHold {
+    background-color: rgba(255, 165, 0, 0.1);
+    color: #ff8c00;
+    border: 1px solid #ff8c00;
+}
+
+.statusPending {
+    background-color: rgba(255, 193, 7, 0.1);
+    color: #ffc107;
+    border: 1px solid #ffc107;
+}
+
+.statusCancelled {
+    background-color: rgba(255, 0, 0, 0.1);
+    color: red;
+    border: 1px solid red;
+}
+
+.statusFailed {
+    background-color: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+    border: 1px solid #dc3545;
+}
+
+.statusDefault {
+    background-color: rgba(108, 117, 125, 0.1);
+    color: #6c757d;
+    border: 1px solid #6c757d;
+}
+
+/* Legacy status classes */
+.active {
+    background-color: rgba(0, 128, 0, 0.1);
+    color: green;
+    border: 1px solid green;
+}
+
+.inactive {
+    background-color: rgba(255, 0, 0, 0.1);
+    color: red;
+    border: 1px solid red;
+}
+
+/* Order name styles */
+.orderName {
+    max-width: 250px;
+}
+
+.orderDescription {
+    font-size: 12px;
+    color: #666;
+    margin-top: 4px;
+    font-style: italic;
+}
+
+/* Order type styles */
+.orderType {
+    background-color: rgba(108, 117, 125, 0.1);
+    color: #495057;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+}
+
+/* Food count styles */
+.foodCount {
+    background-color: rgba(0, 123, 255, 0.1);
+    color: #007bff;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: bold;
+}
+
+/* Price styles */
+.price {
+    font-weight: bold;
+    color: #28a745;
+    text-align: right;
+}
+
+.viewButton {
+    padding: 6px 12px;
+    background-color: #5d57c9;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.viewButton:hover {
+    background-color: #4a45a0;
+}
+
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal {
+    background-color: var(--bgSoft);
+    border-radius: 10px;
+    width: 800px;
+    max-width: 90%;
+    max-height: 90vh;
+    color: var(--text);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.modalHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid #ddd;
+    background-color: var(--bg);
+}
+
+.modalHeader h2 {
+    margin: 0;
+    font-size: 20px;
+}
+
+.closeButton {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--text);
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.closeButton:hover {
+    background-color: rgba(255, 0, 0, 0.1);
+    color: red;
+}
+
+.modalContent {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.orderInfo, .priceInfo, .foodInfo {
+    margin-bottom: 24px;
+}
+
+.orderInfo h3, .priceInfo h3, .foodInfo h3 {
+    margin: 0 0 16px 0;
+    color: var(--text);
+    font-size: 16px;
+    border-bottom: 2px solid #5d57c9;
+    padding-bottom: 8px;
+}
+
+.infoGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.infoItem {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.infoItem strong {
+    color: #666;
+    font-size: 12px;
+    text-transform: uppercase;
+}
+
+.infoItem span {
+    color: var(--text);
+    font-size: 14px;
+}
+
+.priceGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.priceItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background-color: var(--bg);
+    border-radius: 8px;
+}
+
+.priceItem strong {
+    color: #666;
+    font-size: 14px;
+}
+
+.priceItem span {
+    font-weight: bold;
+    color: var(--text);
+}
+
+.finalPrice {
+    color: #28a745 !important;
+    font-size: 16px !important;
+}
+
+.foodList {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.foodItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background-color: var(--bg);
+    border-radius: 8px;
+    border-left: 4px solid #5d57c9;
+}
+
+.foodDetails {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.foodName {
+    font-weight: bold;
+    color: var(--text);
+    font-size: 14px;
+}
+
+.foodId {
+    color: #666;
+    font-size: 12px;
+}
+
+.foodQuantity {
+    background-color: rgba(93, 87, 201, 0.1);
+    color: #5d57c9;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.modalButtons {
+    display: flex;
+    justify-content: flex-end;
+    padding: 20px;
+    border-top: 1px solid #ddd;
+    background-color: var(--bg);
+}
+
+.cancelButton {
+    padding: 10px 20px;
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.cancelButton:hover {
+    background-color: #c82333;
+}
+
+.loading {
+    text-align: center;
+    padding: 30px;
+    color: var(--text);
+}
+
+.error {
+    color: crimson;
+    text-align: center;
+    padding: 20px;
+    background-color: var(--bgSoft);
+    border-radius: 5px;
+    margin: 20px 0;
+}
+
+.noData {
+    text-align: center;
+    padding: 1rem;
+    color: #aaa;
+    font-style: italic;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .modal {
+        width: 95%;
+        max-height: 95vh;
+    }
+    
+    .table {
+        font-size: 12px;
+    }
+    
+    .table td {
+        padding: 8px;
+    }
+    
+    .infoGrid {
+        grid-template-columns: 1fr;
+    }
+    
+    .priceGrid {
+        grid-template-columns: 1fr;
+    }
+    
+    .foodItem {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+}

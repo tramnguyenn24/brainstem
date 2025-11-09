@@ -1,0 +1,55 @@
+.container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background-color: #2e374a;
+    padding: 10px;
+    border-radius: 10px;
+    min-width: 300px;
+    position: relative;
+  }
+  
+  .input {
+    background-color: transparent;
+    border: none;
+    color: var(--text);
+    outline: none;
+    flex-grow: 1;
+    width: 100%;
+  }
+
+  .searchIcon {
+    color: #888;
+    font-size: 20px;
+  }
+
+  .clearButton {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #888;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    margin: 0;
+  }
+
+  .clearButton:hover {
+    color: #fff;
+  }
+
+  .submitButton {
+    background-color: #5d57c9;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s;
+  }
+
+  .submitButton:hover {
+    background-color: #4a45a0;
+  }

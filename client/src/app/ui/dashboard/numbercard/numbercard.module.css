@@ -1,0 +1,77 @@
+.numbercard {
+  background-color: #182237;
+  border-radius: 10px;
+  padding: 20px;
+  height: 100%;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.numbercard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.numbercard_content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.numbercard_text {
+  display: flex;
+  flex-direction: column;
+}
+
+.numbercard_value {
+  font-size: 28px;
+  font-weight: 700;
+  color: white;
+  margin: 0 0 5px 0;
+}
+
+.numbercard_title {
+  font-size: 14px;
+  color: #7f8c8d;
+  margin: 0;
+}
+
+.numbercard_icon_wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  border-radius: 10px;
+  background-color: rgba(52, 152, 219, 0.1);
+}
+
+.numbercard_icon {
+  font-size: 24px;
+  color: #3498db;
+}
+
+/* Different colors for different card types */
+.numbercard:nth-child(1) .numbercard_icon_wrapper {
+  background-color: rgba(52, 152, 219, 0.1);
+}
+
+.numbercard:nth-child(1) .numbercard_icon {
+  color: #3498db;
+}
+
+.numbercard:nth-child(2) .numbercard_icon_wrapper {
+  background-color: rgba(46, 204, 113, 0.1);
+}
+
+.numbercard:nth-child(2) .numbercard_icon {
+  color: #2ecc71;
+}
+
+.numbercard:nth-child(3) .numbercard_icon_wrapper {
+  background-color: rgba(155, 89, 182, 0.1);
+}
+
+.numbercard:nth-child(3) .numbercard_icon {
+  color: #9b59b6;
+}

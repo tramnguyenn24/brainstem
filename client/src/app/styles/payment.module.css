@@ -1,0 +1,1584 @@
+.paymentPage {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.paymentContainer {
+  display: grid;
+  grid-template-columns: 1fr 350px;
+  gap: 2rem;
+}
+
+.paymentForm {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+}
+
+.formHeader {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.formHeader h1 {
+  margin: 0;
+  color: #333;
+  font-size: 1.8rem;
+}
+
+.lockIcon {
+  color: #2563eb;
+  font-size: 1.5rem;
+}
+
+.formSection {
+  margin-bottom: 2rem;
+}
+
+.formSection h2 {
+  color: #333;
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sectionIcon {
+  color: #2563eb;
+}
+
+/* Discount Styles */
+.discountList {
+  display: grid;
+  gap: 1rem;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.discountCard {
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: white;
+}
+
+.discountCard:hover {
+  border-color: #2563eb;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
+}
+
+.discountCardDisabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.discountCardDisabled:hover {
+  border-color: #e2e8f0;
+  box-shadow: none;
+}
+
+.discountHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.ineligibleBadge {
+  background: #ef4444;
+  color: white;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  margin-left: auto;
+}
+
+.discountIcon {
+  color: #2563eb;
+  font-size: 1rem;
+}
+
+.discountName {
+  font-weight: 600;
+  color: #333;
+  font-size: 1rem;
+}
+
+.discountDetails {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.discountValue {
+  background: #2563eb;
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.minOrder {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.minOrderNotMet {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.discountDescription {
+  font-size: 0.85rem;
+  color: #666;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.maxDiscount {
+  font-size: 0.8rem;
+  color: #666;
+  margin: 0.5rem 0 0 0;
+  font-style: italic;
+}
+
+.selectedDiscount {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f0f9ff;
+  border: 2px solid #2563eb;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.discountInfo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.discountInfo span:first-of-type {
+  font-weight: 600;
+  color: #333;
+}
+
+.selectedDiscount .discountValue {
+  background: #28a745;
+}
+
+.removeDiscount {
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.removeDiscount:hover {
+  background: #dc2626;
+}
+
+.loadingDiscounts {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+}
+
+.noDiscounts {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+  font-style: italic;
+}
+
+.inputGroup {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.inputIcon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #666;
+}
+
+.inputGroup input {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 2.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+
+.inputGroup input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.inputGroup input:invalid {
+  border-color: #dc3545;
+}
+
+.inputGroup input:invalid:focus {
+  box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+
+.cardDetails {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.addressDetails {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.payButton {
+  width: 100%;
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 1rem;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.payButton:hover {
+  background: #1d4ed8;
+}
+
+.orderSummary {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+  height: fit-content;
+}
+
+.orderSummary h2 {
+  color: #333;
+  margin: 0 0 1.5rem 0;
+}
+
+.orderItems {
+  margin-bottom: 1.5rem;
+}
+
+.orderItem {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.orderTotal {
+  border-top: 1px solid #eee;
+  padding-top: 1rem;
+}
+
+.totalRow {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  color: #666;
+}
+
+.totalRow:last-child {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #eee;
+  font-weight: 600;
+  color: #333;
+  font-size: 1.1rem;
+}
+
+.emptyCart {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  max-width: 500px;
+  margin: 4rem auto;
+}
+
+.emptyCart h2 {
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.emptyCart p {
+  color: #666;
+}
+
+@media (max-width: 768px) {
+  .paymentContainer {
+    grid-template-columns: 1fr;
+  }
+
+  .cardDetails,
+  .addressDetails {
+    grid-template-columns: 1fr;
+  }
+
+  .discountList {
+    max-height: 200px;
+  }
+
+  .discountDetails {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+
+  .discountModal {
+    max-width: 95vw;
+    max-height: 90vh;
+    margin: 0.5rem;
+  }
+
+  .modalHeader {
+    padding: 1rem;
+  }
+
+  .modalContent {
+    padding: 1rem;
+  }
+
+  .modalHeader h3 {
+    font-size: 1.1rem;
+  }
+
+  .addDiscountBtn {
+    padding: 0.75rem;
+    font-size: 0.85rem;
+  }
+
+  .appliedDiscount {
+    padding: 0.75rem;
+  }
+
+  .discountRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .removeDiscountBtn {
+    align-self: flex-end;
+  }
+
+  .textArea {
+    min-height: 60px;
+    font-size: 0.9rem;
+  }
+
+  .selectInput {
+    font-size: 0.9rem;
+  }
+
+  .formSection h2 {
+    font-size: 1.1rem;
+  }
+
+  .payButton {
+    font-size: 1rem;
+    padding: 0.875rem;
+  }
+}
+
+/* Discount Section in Order Summary */
+.discountSection {
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #eee;
+}
+
+.addDiscountBtn {
+  width: 100%;
+  background: #f8f9fa;
+  border: 2px dashed #dee2e6;
+  border-radius: 8px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.addDiscountBtn:hover {
+  background: #e9ecef;
+  border-color: #2563eb;
+  color: #2563eb;
+}
+
+.appliedDiscount {
+  background: #f0f9ff;
+  border: 2px solid #2563eb;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.discountRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.discountInfo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.removeDiscountBtn {
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.removeDiscountBtn:hover {
+  background: #dc2626;
+}
+
+.appliedDiscount .discountValue {
+  background: #28a745;
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  display: inline-block;
+}
+
+/* Modal Styles */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.discountModal {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  max-width: 600px;
+  width: 100%;
+  max-height: 80vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid #eee;
+  background: #f8f9fa;
+}
+
+.modalHeader h3 {
+  margin: 0;
+  color: #333;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.closeModal {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  color: #666;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.closeModal:hover {
+  background: #e9ecef;
+  color: #333;
+}
+
+.modalContent {
+  padding: 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modalContent .discountList {
+  display: grid;
+  gap: 1rem;
+  max-height: none;
+}
+
+.textArea {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 80px;
+  transition: all 0.2s;
+}
+
+.textArea:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.selectInput {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 1rem;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.selectInput:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.payButton:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+.payButton:disabled:hover {
+  background: #9ca3af;
+}
+
+.selectedAddressInfo {
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.selectedAddressInfo h4 {
+  margin: 0 0 0.5rem 0;
+  color: #0369a1;
+  font-size: 0.9rem;
+}
+
+.selectedAddressInfo p {
+  margin: 0.25rem 0;
+  font-size: 0.85rem;
+  color: #374151;
+}
+
+.manualAddressToggle {
+  margin-top: 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.manualAddressToggle summary {
+  padding: 0.75rem 1rem;
+  background: #f9fafb;
+  cursor: pointer;
+  font-weight: 500;
+  color: #374151;
+  border-bottom: 1px solid #e5e7eb;
+  transition: background-color 0.2s;
+}
+
+.manualAddressToggle summary:hover {
+  background: #f3f4f6;
+}
+
+.manualAddressToggle[open] summary {
+  background: #e5e7eb;
+}
+
+.manualAddressInputs {
+  padding: 1rem;
+  background: white;
+}
+
+/* Saved Addresses Styles */
+.loadingAddresses {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+  font-style: italic;
+}
+
+.savedAddresses {
+  margin-bottom: 1.5rem;
+}
+
+.savedAddresses h3 {
+  color: #374151;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.addressList {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.addressCard {
+  background: #f9fafb;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.addressCard:hover {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+
+.selectedCard {
+  border-color: #2563eb;
+  background: #dbeafe;
+}
+
+.selectedCard:hover {
+  border-color: #2563eb;
+  background: #dbeafe;
+}
+
+.addressLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.addressLabel svg {
+  font-size: 1rem;
+  color: #6b7280;
+}
+
+.defaultBadge {
+  background: #10b981;
+  color: white;
+  padding: 0.125rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  margin-left: auto;
+}
+
+.addressText {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.addNewAddressBtn {
+  width: 100%;
+  background: white;
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  padding: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: #6b7280;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.addNewAddressBtn:hover {
+  border-color: #2563eb;
+  color: #2563eb;
+  background: #f0f9ff;
+}
+
+.addressForm {
+  margin-top: 1rem;
+}
+
+.addressForm h3 {
+  color: #374151;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+/* Responsive for address section */
+@media (max-width: 768px) {
+  .addressList {
+    gap: 0.5rem;
+  }
+  
+  .addressCard {
+    padding: 0.75rem;
+  }
+  
+  .addressLabel {
+    font-size: 0.9rem;
+  }
+  
+  .addressText {
+    font-size: 0.85rem;
+  }
+}
+
+/* Order Information Display */
+.loadingOrder {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+  font-style: italic;
+}
+
+.orderInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.orderInfoItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.orderInfoItem:last-child {
+  border-bottom: none;
+}
+
+.orderInfoItem label {
+  font-weight: 600;
+  color: #495057;
+  min-width: 120px;
+}
+
+.orderInfoItem span {
+  flex: 1;
+  text-align: right;
+  color: #212529;
+}
+
+.orderStatus {
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeaa7;
+}
+
+.orderPrice {
+  font-weight: 700;
+  color: #28a745;
+  font-size: 1.1rem;
+}
+
+.emptyOrder {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+  font-style: italic;
+  border: 2px dashed #ddd;
+  border-radius: 8px;
+}
+
+/* Responsive design for order info */
+@media (max-width: 768px) {
+  .orderInfoItem {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .orderInfoItem span {
+    text-align: left;
+  }
+}
+
+/* Payment Status Overlay */
+.paymentOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 1rem;
+}
+
+.paymentStatusModal {
+  background: white;
+  border-radius: 16px;
+  padding: 3rem 2rem;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  max-width: 500px;
+  width: 100%;
+  animation: slideInUp 0.3s ease-out;
+}
+
+@keyframes slideInUp {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.spinnerContainer {
+  margin-bottom: 1.5rem;
+}
+
+.paymentSpinner {
+  width: 60px;
+  height: 60px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #2563eb;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+.paymentStatusModal h2 {
+  color: #333;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0 0 1rem 0;
+}
+
+.paymentStatusModal p {
+  color: #666;
+  margin: 0.5rem 0;
+  line-height: 1.5;
+}
+
+.subText {
+  font-size: 0.9rem;
+  color: #888 !important;
+  font-style: italic;
+}
+
+.redirectText {
+  color: #2563eb !important;
+  font-weight: 500;
+}
+
+/* Status Icons */
+.successIcon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #10b981;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin: 0 auto 1.5rem auto;
+  animation: bounceIn 0.6s ease-out;
+}
+
+.errorIcon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #ef4444;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin: 0 auto 1.5rem auto;
+  animation: bounceIn 0.6s ease-out;
+}
+
+.warningIcon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #f59e0b;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin: 0 auto 1.5rem auto;
+  animation: bounceIn 0.6s ease-out;
+}
+
+.successTitle {
+  color: #10b981 !important;
+}
+
+.errorTitle {
+  color: #ef4444 !important;
+}
+
+.warningTitle {
+  color: #f59e0b !important;
+}
+
+/* Action Buttons */
+.waitingActions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 1.5rem;
+}
+
+.cancelPaymentBtn {
+  background: #6b7280;
+  color: white;
+  border: none;
+  padding: 0.75rem 2rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 1.5rem;
+}
+
+.cancelPaymentBtn:hover {
+  background: #4b5563;
+}
+
+.manualConfirmBtn {
+  background: #10b981;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.manualConfirmBtn:hover {
+  background: #059669;
+}
+
+.failedActions,
+.timeoutActions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 1.5rem;
+}
+
+.retryPaymentBtn {
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.retryPaymentBtn:hover {
+  background: #1d4ed8;
+}
+
+.backToCartBtn {
+  background: #6b7280;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.backToCartBtn:hover {
+  background: #4b5563;
+}
+
+.checkOrderBtn {
+  background: #10b981;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.checkOrderBtn:hover {
+  background: #059669;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .paymentStatusModal {
+    padding: 2rem 1.5rem;
+    margin: 1rem;
+  }
+
+  .paymentStatusModal h2 {
+    font-size: 1.3rem;
+  }
+
+  .successIcon,
+  .errorIcon,
+  .warningIcon {
+    width: 60px;
+    height: 60px;
+    font-size: 2rem;
+  }
+
+  .failedActions,
+  .timeoutActions {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .waitingActions {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .retryPaymentBtn,
+  .backToCartBtn,
+  .checkOrderBtn,
+  .cancelPaymentBtn,
+  .manualConfirmBtn {
+    width: 100%;
+    padding: 1rem;
+  }
+}
+
+/* Taking Method Styles */
+.fieldLabel {
+  display: block;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+}
+
+.takingMethodOptions {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.radioOption {
+  position: relative;
+}
+
+.radioInput {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.radioLabel {
+  cursor: pointer;
+  width: 100%;
+  display: block;
+}
+
+.radioContent {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  background: white;
+  transition: all 0.2s ease;
+}
+
+.radioContent:hover {
+  border-color: #2563eb;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
+}
+
+.radioInput:checked + .radioLabel .radioContent {
+  border-color: #2563eb;
+  background: #f0f9ff;
+  color: black;
+}
+
+.radioIcon {
+  font-size: 1.5rem;
+  color: #2563eb;
+  min-width: 24px;
+}
+
+.radioText {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.radioTitle {
+  font-weight: 600;
+  color: #333;
+  font-size: 1rem;
+}
+
+.radioDescription {
+  font-size: 0.875rem;
+  color: #666;
+  line-height: 1.4;
+}
+
+/* Notes section specific styles */
+.inputGroup .textArea {
+  min-height: 100px;
+  resize: vertical;
+  font-family: inherit;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1rem;
+  font-size: 1rem;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease;
+}
+
+.inputGroup .textArea:focus {
+  border-color: #2563eb;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.inputGroup .textArea::placeholder {
+  color: #9ca3af;
+}
+
+/* Responsive design for taking method options */
+@media (max-width: 768px) {
+  .takingMethodOptions {
+    gap: 0.75rem;
+  }
+  
+  .radioContent {
+    padding: 0.75rem;
+    gap: 0.75rem;
+  }
+  
+  .radioIcon {
+    font-size: 1.25rem;
+  }
+  
+  .radioTitle {
+    font-size: 0.875rem;
+  }
+  
+  .radioDescription {
+    font-size: 0.8rem;
+  }
+  
+  .inputGroup .textArea {
+    min-height: 80px;
+    padding: 0.75rem;
+  }
+}
+
+/* New Address Styles */
+.noAddressContainer {
+  text-align: center;
+  padding: 2rem;
+  border: 2px dashed #e2e8f0;
+  border-radius: 12px;
+  background: #f8f9fa;
+}
+
+.noAddressMessage {
+  margin-bottom: 1.5rem;
+}
+
+.noAddressIcon {
+  font-size: 3rem;
+  color: #cbd5e0;
+  margin-bottom: 1rem;
+}
+
+.noAddressMessage h4 {
+  color: #4a5568;
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+}
+
+.noAddressMessage p {
+  color: #718096;
+  font-size: 0.95rem;
+}
+
+.addressFormHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.formIcon {
+  color: #2563eb;
+  font-size: 1.2rem;
+}
+
+.cancelAddressBtn {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+}
+
+.cancelAddressBtn:hover {
+  background: #dc2626;
+}
+
+.addressActions {
+  margin-top: 1rem;
+  display: flex;
+  gap: 1rem;
+}
+
+.confirmAddressBtn {
+  background: #10b981;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+}
+
+.confirmAddressBtn:hover {
+  background: #059669;
+  transform: translateY(-1px);
+}
+
+.addressHint {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
+}
+
+.addressHint p {
+  margin: 0;
+  color: #0369a1;
+  font-size: 0.9rem;
+}
+
+/* Address Form Styles - New Components */
+.labelSelector {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.labelSelector .radioLabel {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  margin: 0;
+}
+
+.labelSelector .radioLabel input[type="radio"] {
+  display: none;
+}
+
+.radioCustom {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  background: white;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: black;
+}
+
+.labelSelector .radioLabel input[type="radio"]:checked + .radioCustom {
+  border-color: #2563eb;
+  background: #f0f9ff;
+  color: #2563eb;
+}
+
+.radioCustom:hover {
+  border-color: #cbd5e1;
+}
+
+.input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.2s;
+  box-sizing: border-box;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.inputRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.checkboxGroup {
+  margin: 1rem 0;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: black;
+}
+
+.checkboxLabel input[type="checkbox"] {
+  display: none;
+}
+
+.checkboxCustom {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #e2e8f0;
+  border-radius: 4px;
+  background: white;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.checkboxLabel input[type="checkbox"]:checked + .checkboxCustom {
+  border-color: #2563eb;
+  background: #2563eb;
+}
+
+.checkboxLabel input[type="checkbox"]:checked + .checkboxCustom::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.formActions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+  justify-content: flex-end;
+}
+
+.cancelPaymentButton {
+  padding: 1rem 2rem;
+  border: 2px solid #dc2626;
+  background-color: white;
+  color: #dc2626;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.cancelPaymentButton:hover {
+  background-color: #dc2626;
+  color: white;
+}
+
+.cancelPaymentButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.payButton {
+  padding: 1rem 2rem;
+  background-color: #10b981;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.payButton:hover {
+  background-color: #059669;
+}
+
+.payButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.spinning {
+  animation: spinAddress 1s linear infinite;
+}
+
+@keyframes spinAddress {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.orderNameDisplay {
+  font-weight: 600;
+  color: #333;
+  padding: 0.75rem;
+  background: #f8f9fa;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  display: block;
+}
+
+/* Responsive for new address form */
+@media (max-width: 768px) {
+  .labelSelector {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .inputRow {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  
+  .formActions {
+    flex-direction: column;
+  }
+  
+  .radioCustom {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+  }
+}
+
+.errorMessage {
+  color: #dc3545;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+  display: block;
+  font-style: italic;
+} 

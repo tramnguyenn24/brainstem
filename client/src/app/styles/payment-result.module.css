@@ -1,0 +1,345 @@
+.container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--main-bg-color);
+  padding: 2rem 1rem;
+  position: relative;
+}
+
+.container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(166, 161, 130, 0.1) 0%, rgba(44, 62, 80, 0.1) 100%);
+  pointer-events: none;
+}
+
+.loadingBox {
+  background: rgba(35, 35, 37, 0.95);
+  border: 1px solid var(--icons-color);
+  border-radius: 20px;
+  padding: 3rem 2rem;
+  text-align: center;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  position: relative;
+  z-index: 1;
+}
+
+.loadingBox h2 {
+  color: var(--font--color);
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  margin-top: 1rem;
+  font-size: 1.2rem;
+}
+
+.spinner {
+  font-size: 3rem;
+  color: var(--icons-color);
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.resultBox {
+  background: rgba(35, 35, 37, 0.95);
+  border: 1px solid var(--icons-color);
+  border-radius: 20px;
+  padding: 3rem 2rem;
+  text-align: center;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  max-width: 600px;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+.successIcon {
+  font-size: 4rem;
+  color: #00ff88;
+  margin-bottom: 1rem;
+  animation: bounceIn 0.6s ease-out;
+  filter: drop-shadow(0 0 10px rgba(0, 255, 136, 0.3));
+}
+
+.errorIcon {
+  font-size: 4rem;
+  color: #ff4757;
+  margin-bottom: 1rem;
+  animation: bounceIn 0.6s ease-out;
+  filter: drop-shadow(0 0 10px rgba(255, 71, 87, 0.3));
+}
+
+@keyframes bounceIn {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.successTitle {
+  color: #00ff88;
+  font-size: 2rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  font-family: 'Poppins', sans-serif;
+  text-shadow: 0 0 20px rgba(0, 255, 136, 0.2);
+}
+
+.errorTitle {
+  color: #ff4757;
+  font-size: 2rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  font-family: 'Poppins', sans-serif;
+  text-shadow: 0 0 20px rgba(255, 71, 87, 0.2);
+}
+
+.successMessage {
+  color: var(--font--color);
+  font-size: 1.1rem;
+  margin-bottom: 2rem;
+  line-height: 1.6;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
+}
+
+.errorMessage {
+  color: var(--font--color);
+  font-size: 1rem;
+  margin-bottom: 2rem;
+  line-height: 1.6;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
+}
+
+.transactionInfo {
+  background: rgba(44, 62, 80, 0.3);
+  border: 1px solid rgba(166, 161, 130, 0.3);
+  border-radius: 15px;
+  padding: 1.5rem;
+  margin: 2rem 0;
+  text-align: left;
+  backdrop-filter: blur(5px);
+}
+
+.transactionInfo h3 {
+  color: var(--icons-color);
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 0 0 1rem 0;
+  text-align: center;
+  font-family: 'Poppins', sans-serif;
+}
+
+.infoRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid rgba(166, 161, 130, 0.2);
+}
+
+.infoRow:last-child {
+  border-bottom: none;
+}
+
+.infoRow span:first-child {
+  font-weight: 500;
+  color: var(--icons-color);
+  font-family: 'Poppins', sans-serif;
+}
+
+.infoRow span:last-child {
+  color: var(--font--color);
+  font-weight: 400;
+  text-align: right;
+  word-break: break-word;
+  max-width: 60%;
+  font-family: 'Poppins', sans-serif;
+}
+
+.userInfo {
+  background: rgba(44, 62, 80, 0.3);
+  border: 1px solid rgba(166, 161, 130, 0.3);
+  border-radius: 15px;
+  padding: 1.5rem;
+  margin: 2rem 0;
+  backdrop-filter: blur(5px);
+}
+
+.userName {
+  color: var(--font--color);
+  font-size: 1.1rem;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
+  margin: 0;
+  text-align: center;
+}
+
+.userName strong {
+  color: var(--icons-color);
+  font-weight: 600;
+}
+
+.redirectMessage {
+  color: var(--icons-color);
+  font-size: 0.9rem;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
+  margin: 1rem 0;
+  text-align: center;
+  font-style: italic;
+  opacity: 0.8;
+}
+
+.actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 2rem;
+  flex-wrap: wrap;
+}
+
+.homeButton {
+  background: linear-gradient(135deg, var(--icons-color) 0%, #c9c49a 100%);
+  color: var(--main-bg-color);
+  padding: 0.75rem 2rem;
+  border-radius: 12px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1rem;
+  font-family: 'Poppins', sans-serif;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 15px rgba(166, 161, 130, 0.3);
+  border: none;
+  cursor: pointer;
+}
+
+.homeButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(166, 161, 130, 0.4);
+  filter: brightness(1.1);
+}
+
+.retryButton {
+  background: linear-gradient(135deg, #ff4757 0%, #ff3742 100%);
+  color: white;
+  padding: 0.75rem 2rem;
+  border-radius: 12px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1rem;
+  font-family: 'Poppins', sans-serif;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 15px rgba(255, 71, 87, 0.3);
+  border: none;
+  cursor: pointer;
+}
+
+.retryButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(255, 71, 87, 0.4);
+  filter: brightness(1.1);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+
+  .resultBox {
+    padding: 2rem 1.5rem;
+    margin: 1rem;
+  }
+
+  .successIcon,
+  .errorIcon {
+    font-size: 3rem;
+  }
+
+  .successTitle,
+  .errorTitle {
+    font-size: 1.5rem;
+  }
+
+  .successMessage,
+  .errorMessage {
+    font-size: 1rem;
+  }
+
+  .transactionInfo {
+    padding: 1rem;
+  }
+
+  .infoRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+
+  .infoRow span:last-child {
+    max-width: 100%;
+    text-align: left;
+  }
+
+  .actions {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .homeButton,
+  .retryButton {
+    width: 100%;
+    padding: 1rem 2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .resultBox {
+    padding: 1.5rem 1rem;
+  }
+
+  .successTitle,
+  .errorTitle {
+    font-size: 1.3rem;
+  }
+
+  .transactionInfo h3 {
+    font-size: 1rem;
+  }
+
+  .homeButton,
+  .retryButton {
+    font-size: 0.9rem;
+    padding: 0.875rem 1.5rem;
+  }
+} 

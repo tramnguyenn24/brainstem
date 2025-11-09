@@ -1,0 +1,39 @@
+.container {
+    display: flex;
+  }
+  
+  .menu {
+  
+    background-color: rgb(15, 23, 42);
+    padding: 0px;
+    min-height: 100vh;
+    width: 280px;
+  }
+  
+  .content {
+    flex: 4;
+    padding: 20px;
+  }
+  
+  .wrapper {
+    display: flex;
+    gap: 20px;
+    margin-top: 20px;
+  }
+  
+  .main {
+    flex: 3;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .cards {
+    display: flex;
+    gap: 20px;
+    justify-content: space-between;
+  }
+  
+  .side {
+    flex: 1;
+  }

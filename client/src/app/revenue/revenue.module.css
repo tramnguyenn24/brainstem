@@ -1,0 +1,617 @@
+.container {
+  padding: 20px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 24px;
+  color: white;
+}
+
+.content {
+  background-color: var(--bgSoft);
+  padding: 20px;
+  border-radius: 10px;
+  margin-top: 20px;
+}
+
+.dateFilter {
+  display: flex;
+  gap: 1rem;
+}
+
+.dateGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.dateGroup label {
+  color: var(--font--color);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.dateInput {
+  padding: 0.5rem;
+  border: 1px solid var(--icons-color);
+  border-radius: 8px;
+  background: rgba(35, 35, 37, 0.8);
+  color: var(--font--color);
+  font-size: 0.9rem;
+}
+
+.dateInput:focus {
+  outline: none;
+  border-color: var(--icons-color);
+  box-shadow: 0 0 0 2px rgba(166, 161, 130, 0.2);
+}
+
+/* Loading và Error States */
+.loading, .error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  text-align: center;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(166, 161, 130, 0.3);
+  border-top: 4px solid var(--icons-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.error h2 {
+  color: #ff4757;
+  margin-bottom: 1rem;
+}
+
+.retryButton {
+  padding: 0.75rem 1.5rem;
+  background: var(--icons-color);
+  color: var(--main-bg-color);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.retryButton:hover {
+  background: rgba(166, 161, 130, 0.8);
+  transform: translateY(-2px);
+}
+
+/* Dashboard Cards */
+.dashboard {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+}
+
+.card {
+  background: rgba(35, 35, 37, 0.8);
+  border: 1px solid rgba(166, 161, 130, 0.3);
+  border-radius: 15px;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  border-color: var(--icons-color);
+}
+
+.cardIcon {
+  font-size: 2.5rem;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(166, 161, 130, 0.1);
+  border-radius: 12px;
+}
+
+.cardContent h3 {
+  color: var(--font--color);
+  font-size: 1rem;
+  font-weight: 500;
+  margin: 0 0 0.5rem 0;
+}
+
+.cardNumber {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--icons-color);
+  margin: 0;
+}
+
+.cardSubtext {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Charts Container */
+.chartsContainer {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+
+.chartCard {
+  background: rgba(35, 35, 37, 0.8);
+  border: 1px solid rgba(166, 161, 130, 0.3);
+  border-radius: 15px;
+  padding: 1.5rem;
+  backdrop-filter: blur(10px);
+}
+
+.debugInfo {
+  background: rgba(255, 193, 7, 0.1);
+  border: 1px solid rgba(255, 193, 7, 0.3);
+  border-radius: 5px;
+  padding: 10px;
+  margin-bottom: 15px;
+  font-size: 0.9rem;
+  color: #B8860B;
+}
+
+.debugInfo p {
+  margin: 5px 0;
+}
+
+.chartCard h2 {
+  color: var(--icons-color);
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin: 0 0 1.5rem 0;
+  text-align: center;
+}
+
+.chartWrapper {
+  position: relative;
+  height: 400px;
+  width: 100%;
+}
+
+/* Line Chart Styles */
+.lineChartContainer {
+  background: rgba(44, 62, 80, 0.2);
+  border-radius: 15px;
+  padding: 20px;
+  margin-top: 10px;
+}
+
+.chartLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-bottom: 20px;
+  justify-content: center;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--font--color);
+}
+
+.legendColor {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.lineChart {
+  position: relative;
+  height: 350px;
+  background: rgba(35, 35, 37, 0.3);
+  border-radius: 10px;
+  padding: 20px;
+  overflow: hidden;
+}
+
+.chartGrid {
+  position: absolute;
+  top: 20px;
+  left: 60px;
+  right: 20px;
+  bottom: 40px;
+  pointer-events: none;
+}
+
+.gridLine {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(166, 161, 130, 0.2);
+  display: flex;
+  align-items: center;
+}
+
+.gridLabel {
+  position: absolute;
+  left: -50px;
+  font-size: 0.75rem;
+  color: var(--font--color);
+  background: rgba(35, 35, 37, 0.8);
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.chartSvg {
+  position: absolute;
+  top: 20px;
+  left: 60px;
+  right: 20px;
+  bottom: 40px;
+  width: calc(100% - 80px);
+  height: calc(100% - 60px);
+}
+
+.chartLine {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: all 0.3s ease;
+}
+
+.chartLine:hover {
+  stroke-width: 3;
+  filter: drop-shadow(0 0 6px currentColor);
+}
+
+.xAxisLabels {
+  position: absolute;
+  bottom: 10px;
+  left: 60px;
+  right: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.xAxisLabel {
+  font-size: 0.7rem;
+  color: var(--font--color);
+  transform: rotate(-45deg);
+  white-space: nowrap;
+  transform-origin: center;
+}
+
+/* Table Styles */
+.tableWrapper {
+  overflow-x: auto;
+  background: rgba(44, 62, 80, 0.3);
+  border-radius: 10px;
+  border: 1px solid rgba(166, 161, 130, 0.2);
+}
+
+.dataTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'Poppins', sans-serif;
+}
+
+.dataTable th {
+  background: rgba(166, 161, 130, 0.2);
+  color: var(--font--color);
+  font-weight: 600;
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 2px solid rgba(166, 161, 130, 0.3);
+  font-size: 0.9rem;
+}
+
+.dataTable td {
+  padding: 0.75rem 1rem;
+  color: var(--font--color);
+  border-bottom: 1px solid rgba(166, 161, 130, 0.1);
+  font-size: 0.85rem;
+}
+
+.dataTable tr:hover {
+  background: rgba(166, 161, 130, 0.1);
+}
+
+.dataTable .revenue {
+  color: var(--icons-color);
+  font-weight: 600;
+}
+
+/* Details Section */
+.detailsSection {
+  background: rgba(35, 35, 37, 0.8);
+  border: 1px solid rgba(166, 161, 130, 0.3);
+  border-radius: 15px;
+  padding: 2rem;
+  backdrop-filter: blur(10px);
+  margin-bottom: 2rem;
+}
+
+.detailsSection h2 {
+  color: var(--icons-color);
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0 0 1.5rem 0;
+  text-align: center;
+}
+
+.detailsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.detailCard {
+  background: rgba(44, 62, 80, 0.3);
+  border: 1px solid rgba(166, 161, 130, 0.2);
+  border-radius: 10px;
+  padding: 1rem;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.detailCard:hover {
+  background: rgba(44, 62, 80, 0.5);
+  border-color: var(--icons-color);
+}
+
+.detailCard h4 {
+  color: var(--font--color);
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin: 0 0 0.5rem 0;
+}
+
+.detailCard p {
+  color: var(--icons-color);
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+  
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .dateFilter {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .dashboard {
+    grid-template-columns: 1fr;
+  }
+  
+  .chartsContainer {
+    grid-template-columns: 1fr;
+  }
+  
+  .lineChartContainer {
+    padding: 15px;
+  }
+  
+  .lineChart {
+    height: 280px;
+  }
+  
+  .chartLegend {
+    gap: 10px;
+    font-size: 0.8rem;
+  }
+  
+  .legendColor {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .gridLabel {
+    font-size: 0.7rem;
+    left: -45px;
+  }
+  
+  .xAxisLabel {
+    font-size: 0.65rem;
+  }
+  
+  .dataTable th,
+  .dataTable td {
+    padding: 0.5rem;
+    font-size: 0.8rem;
+  }
+  
+  .detailsGrid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .card {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .cardIcon {
+    width: 50px;
+    height: 50px;
+    font-size: 2rem;
+  }
+  
+  .cardNumber {
+    font-size: 1.5rem;
+  }
+  
+  .lineChartContainer {
+    padding: 10px;
+  }
+  
+  .lineChart {
+    height: 220px;
+  }
+  
+  .chartLegend {
+    gap: 8px;
+    font-size: 0.75rem;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .legendColor {
+    width: 12px;
+    height: 12px;
+  }
+  
+  .chartGrid {
+    left: 40px;
+  }
+  
+  .chartSvg {
+    left: 40px;
+    width: calc(100% - 60px);
+  }
+  
+  .xAxisLabels {
+    left: 40px;
+    right: 20px;
+  }
+  
+  .gridLabel {
+    font-size: 0.65rem;
+    left: -35px;
+  }
+  
+  .xAxisLabel {
+    font-size: 0.6rem;
+  }
+  
+  .tableWrapper {
+    font-size: 0.7rem;
+  }
+  
+  .dataTable th,
+  .dataTable td {
+    padding: 0.4rem;
+  }
+}
+
+/* Recharts Container Styles */
+.rechartsContainer {
+  background: rgba(44, 62, 80, 0.2);
+  border-radius: 15px;
+  padding: 20px;
+  margin-top: 10px;
+}
+
+.rechartsContainer .recharts-wrapper {
+  border-radius: 10px;
+}
+
+.rechartsContainer .recharts-cartesian-grid-horizontal line,
+.rechartsContainer .recharts-cartesian-grid-vertical line {
+  stroke: rgba(255, 255, 255, 0.1);
+}
+
+.rechartsContainer .recharts-text {
+  fill: var(--font--color);
+}
+
+.rechartsContainer .recharts-legend-item-text {
+  color: var(--font--color) !important;
+}
+
+/* Export Button Styles */
+.exportButton {
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, var(--icons-color), rgba(166, 161, 130, 0.8));
+  color: var(--main-bg-color);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+  min-width: 140px;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.exportButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(166, 161, 130, 0.4);
+  background: linear-gradient(135deg, rgba(166, 161, 130, 0.9), var(--icons-color));
+}
+
+.exportButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.loadingSpinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  display: inline-block;
+}
+
+/* Responsive adjustments for export button */
+@media (max-width: 768px) {
+  .dateFilter {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .exportButton {
+    align-self: stretch;
+    min-width: auto;
+  }
+}
