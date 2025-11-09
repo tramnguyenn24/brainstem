@@ -187,6 +187,32 @@ const FormsPage = () => {
     setShowAddModal(true);
   };
 
+  // Tự động thêm trường hỏi về kênh truyền thông khi chọn chiến dịch
+  useEffect(() => {
+    if (formData.maChienDich) {
+      const hasChannelField = formData.cacTruong.some(field => 
+        field.tenTruong.toLowerCase().includes('kênh') || 
+        field.tenTruong.toLowerCase().includes('channel')
+      );
+      
+      if (!hasChannelField) {
+        setFormData(prev => ({
+          ...prev,
+          cacTruong: [
+            ...prev.cacTruong,
+            { 
+              tenTruong: 'Bạn biết chiến dịch qua kênh nào?', 
+              loaiTruong: 'select', 
+              batBuoc: false, 
+              placeholder: 'Chọn kênh truyền thông',
+              options: ['FB ads', 'Zalo OA', 'Người quen giới thiệu']
+            }
+          ]
+        }));
+      }
+    }
+  }, [formData.maChienDich]);
+
   const handleEdit = async (form) => {
     try {
       // Fetch form details from API
@@ -270,7 +296,8 @@ const FormsPage = () => {
           label: field.tenTruong,
           type: field.loaiTruong,
           required: field.batBuoc,
-          placeholder: field.placeholder
+          placeholder: field.placeholder,
+          options: field.options || (field.loaiTruong === 'select' ? [] : undefined)
         })),
         settings: {
           ...formData.cauHinh,
@@ -316,7 +343,8 @@ const FormsPage = () => {
           label: field.tenTruong,
           type: field.loaiTruong,
           required: field.batBuoc,
-          placeholder: field.placeholder
+          placeholder: field.placeholder,
+          options: field.options || (field.loaiTruong === 'select' ? [] : undefined)
         })),
         settings: {
           ...formData.cauHinh,
@@ -577,6 +605,18 @@ const FormsPage = () => {
                       value={field.placeholder}
                       onChange={(e) => updateField(index, 'placeholder', e.target.value)}
                     />
+                    {field.loaiTruong === 'select' && (
+                      <input
+                        type="text"
+                        placeholder="Options (phân cách bằng dấu phẩy)"
+                        value={Array.isArray(field.options) ? field.options.join(', ') : (field.options || '')}
+                        onChange={(e) => {
+                          const options = e.target.value.split(',').map(opt => opt.trim()).filter(opt => opt);
+                          updateField(index, 'options', options);
+                        }}
+                        style={{ flex: 1 }}
+                      />
+                    )}
                     <label>
                       <input
                         type="checkbox"

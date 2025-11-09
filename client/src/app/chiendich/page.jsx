@@ -316,7 +316,7 @@ const Page = () => {
 
   const handleView = async (campaign) => {
     try {
-      const campaignDetail = await campaignService.getCampaignById(campaign.id);
+      const campaignDetail = await campaignService.getCampaignDetails(campaign.id);
       
       // Kiểm tra lỗi từ response
       if (campaignDetail && (campaignDetail.code >= 400 || campaignDetail.error || campaignDetail.status >= 400)) {
@@ -590,7 +590,7 @@ const Page = () => {
       {/* View Modal */}
       {showViewModal && (
         <div className={Style.modalOverlay}>
-          <div className={Style.modal}>
+          <div className={Style.modal} style={{ maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto' }}>
             <h2>Chi tiết chiến dịch</h2>
             <div className={Style.detailContent}>
               <div className={Style.detailItem}>
@@ -604,12 +604,50 @@ const Page = () => {
                 </span>
               </div>
               <div className={Style.detailItem}>
-                <label>Kênh:</label>
-                <span>{selectedCampaign?.channelName || 'N/A'}</span>
-              </div>
-              <div className={Style.detailItem}>
                 <label>Người phụ trách:</label>
                 <span>{selectedCampaign?.ownerStaffName || 'N/A'}</span>
+              </div>
+              <div className={Style.detailItem}>
+                <label>Số HVTN:</label>
+                <span>{selectedCampaign?.potentialStudentsCount || 0}</span>
+              </div>
+              <div className={Style.detailItem}>
+                <label>Số HV mới:</label>
+                <span>{selectedCampaign?.newStudentsCount || 0}</span>
+              </div>
+              {selectedCampaign?.potentialStudentsCount > 0 && (
+                <div className={Style.detailItem}>
+                  <label>Tỉ lệ HV mới:</label>
+                  <span>
+                    {((selectedCampaign?.newStudentsCount || 0) / selectedCampaign.potentialStudentsCount * 100).toFixed(2)}%
+                  </span>
+                </div>
+              )}
+              <div className={Style.detailItem}>
+                <label>Doanh thu:</label>
+                <span>
+                  {selectedCampaign?.revenue ? new Intl.NumberFormat('vi-VN', { 
+                    style: 'currency', 
+                    currency: 'VND' 
+                  }).format(selectedCampaign.revenue) : '0 VNĐ'}
+                </span>
+              </div>
+              <div className={Style.detailItem}>
+                <label>Chi phí:</label>
+                <span>
+                  {selectedCampaign?.cost ? new Intl.NumberFormat('vi-VN', { 
+                    style: 'currency', 
+                    currency: 'VND' 
+                  }).format(selectedCampaign.cost) : '0 VNĐ'}
+                </span>
+              </div>
+              <div className={Style.detailItem}>
+                <label>ROI:</label>
+                <span>
+                  {selectedCampaign?.roi != null 
+                    ? `${Number(selectedCampaign.roi).toFixed(2)}%` 
+                    : 'N/A'}
+                </span>
               </div>
               <div className={Style.detailItem}>
                 <label>Ngân sách:</label>
@@ -620,23 +658,53 @@ const Page = () => {
                   }).format(selectedCampaign.budget) : '0 VNĐ'}
                 </span>
               </div>
-              <div className={Style.detailItem}>
-                <label>Đã chi:</label>
-                <span>
-                  {selectedCampaign?.spend ? new Intl.NumberFormat('vi-VN', { 
-                    style: 'currency', 
-                    currency: 'VND' 
-                  }).format(selectedCampaign.spend) : '0 VNĐ'}
-                </span>
-              </div>
-              <div className={Style.detailItem}>
-                <label>ROI:</label>
-                <span>{selectedCampaign?.roi != null ? `${Number(selectedCampaign.roi).toFixed(2)}x` : '0x'}</span>
-              </div>
               {selectedCampaign?.createdAt && (
                 <div className={Style.detailItem}>
                   <label>Ngày tạo:</label>
                   <span>{new Date(selectedCampaign.createdAt).toLocaleDateString('vi-VN')}</span>
+                </div>
+              )}
+              
+              {/* Hiển thị thông tin kênh truyền thông */}
+              {selectedCampaign?.channels && selectedCampaign.channels.length > 0 && (
+                <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid var(--border)' }}>
+                  <h3 style={{ marginBottom: '15px', fontSize: '18px', fontWeight: 600 }}>Kênh truyền thông:</h3>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '2px solid var(--border)' }}>
+                        <th style={{ padding: '10px', textAlign: 'left', fontWeight: 600 }}>Tên kênh</th>
+                        <th style={{ padding: '10px', textAlign: 'right', fontWeight: 600 }}>Chi phí</th>
+                        <th style={{ padding: '10px', textAlign: 'center', fontWeight: 600 }}>Số HVTN</th>
+                        <th style={{ padding: '10px', textAlign: 'center', fontWeight: 600 }}>Số HV mới</th>
+                        <th style={{ padding: '10px', textAlign: 'right', fontWeight: 600 }}>Doanh thu</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedCampaign.channels.map((channel, index) => (
+                        <tr key={index} style={{ borderBottom: '1px solid var(--border)' }}>
+                          <td style={{ padding: '10px' }}>{channel.channelName || 'N/A'}</td>
+                          <td style={{ padding: '10px', textAlign: 'right' }}>
+                            {new Intl.NumberFormat('vi-VN', { 
+                              style: 'currency', 
+                              currency: 'VND' 
+                            }).format(channel.cost || 0)}
+                          </td>
+                          <td style={{ padding: '10px', textAlign: 'center' }}>
+                            {channel.potentialStudentsCount || 0}
+                          </td>
+                          <td style={{ padding: '10px', textAlign: 'center' }}>
+                            {channel.newStudentsCount || 0}
+                          </td>
+                          <td style={{ padding: '10px', textAlign: 'right' }}>
+                            {new Intl.NumberFormat('vi-VN', { 
+                              style: 'currency', 
+                              currency: 'VND' 
+                            }).format(channel.revenue || 0)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </div>

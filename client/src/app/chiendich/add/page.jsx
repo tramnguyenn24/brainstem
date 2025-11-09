@@ -25,11 +25,13 @@ const AddCampaignPage = () => {
     ownerStaffId: null,
     budget: 0,
     spend: 0,
-    roi: 0
+    cost: 0,
+    revenue: 0
   });
 
   const [channels, setChannels] = useState([]);
   const [staff, setStaff] = useState([]);
+  const [campaignChannels, setCampaignChannels] = useState([]); // Mảng các kênh truyền thông
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -139,6 +141,24 @@ const AddCampaignPage = () => {
     }
   };
 
+  const handleAddChannel = () => {
+    setCampaignChannels([...campaignChannels, { channelId: '', cost: 0 }]);
+  };
+
+  const handleRemoveChannel = (index) => {
+    setCampaignChannels(campaignChannels.filter((_, i) => i !== index));
+  };
+
+  const handleChannelChange = (index, field, value) => {
+    const updated = [...campaignChannels];
+    updated[index] = { ...updated[index], [field]: value };
+    setCampaignChannels(updated);
+    
+    // Tính lại tổng chi phí
+    const totalCost = updated.reduce((sum, ch) => sum + (Number(ch.cost) || 0), 0);
+    setFormData({ ...formData, cost: totalCost });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -153,6 +173,14 @@ const AddCampaignPage = () => {
     try {
       toast.loading("Đang thêm chiến dịch...", { id: "add-campaign" });
       
+      // Chuẩn bị dữ liệu kênh truyền thông
+      const channelsData = campaignChannels
+        .filter(ch => ch.channelId)
+        .map(ch => ({
+          channelId: Number(ch.channelId),
+          cost: Number(ch.cost) || 0
+        }));
+      
       const result = await campaignService.addCampaign({
         name: formData.name,
         status: formData.status,
@@ -160,7 +188,9 @@ const AddCampaignPage = () => {
         ownerStaffId: formData.ownerStaffId ? Number(formData.ownerStaffId) : null,
         budget: formData.budget ? Number(formData.budget) : 0,
         spend: formData.spend ? Number(formData.spend) : 0,
-        roi: formData.roi ? Number(formData.roi) : 0
+        cost: formData.cost || 0,
+        revenue: formData.revenue ? Number(formData.revenue) : 0,
+        channels: channelsData
       });
       
       // Check if API response contains error
@@ -283,18 +313,99 @@ const AddCampaignPage = () => {
         </div>
 
         <div className={styles.formGroup}>
-          <label>ROI:</label>
+          <label>Chi phí (VNĐ):</label>
           <input
             type="number"
-            name="roi"
-            step="0.01"
-            value={formData.roi}
+            name="cost"
+            value={formData.cost}
             onChange={handleChange}
-            placeholder="Nhập ROI (ví dụ: 1.5)"
+            placeholder="Tổng chi phí (tự động tính từ các kênh)"
             min="0"
-            className={errors['roi'] ? styles.errorInput : ''}
+            readOnly
+            className={errors['cost'] ? styles.errorInput : ''}
           />
-          {errors['roi'] && <span className={styles.errorText}>{errors['roi']}</span>}
+          {errors['cost'] && <span className={styles.errorText}>{errors['cost']}</span>}
+          <small style={{ color: '#666', fontSize: '12px' }}>Tự động tính từ tổng chi phí các kênh</small>
+        </div>
+
+        <div className={styles.formGroup}>
+          <label>Doanh thu (VNĐ):</label>
+          <input
+            type="number"
+            name="revenue"
+            value={formData.revenue}
+            onChange={handleChange}
+            placeholder="Nhập doanh thu"
+            min="0"
+            className={errors['revenue'] ? styles.errorInput : ''}
+          />
+          {errors['revenue'] && <span className={styles.errorText}>{errors['revenue']}</span>}
+          <small style={{ color: '#666', fontSize: '12px' }}>Doanh thu sẽ được tính tự động từ khóa học học viên đăng ký</small>
+        </div>
+
+        {/* Phần thêm kênh truyền thông */}
+        <div className={styles.formGroup}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <label>Kênh truyền thông:</label>
+            <button
+              type="button"
+              onClick={handleAddChannel}
+              style={{
+                padding: '6px 12px',
+                background: '#5d57c9',
+                color: 'white',
+                border: 'none',
+                borderRadius: '5px',
+                cursor: 'pointer',
+                fontSize: '12px'
+              }}
+            >
+              + Thêm kênh
+            </button>
+          </div>
+          
+          {campaignChannels.map((channel, index) => (
+            <div key={index} style={{ display: 'flex', gap: '10px', marginBottom: '10px', alignItems: 'center' }}>
+              <select
+                value={channel.channelId}
+                onChange={(e) => handleChannelChange(index, 'channelId', e.target.value)}
+                style={{ flex: 1, padding: '10px', borderRadius: '5px', border: '1px solid var(--border)' }}
+              >
+                <option value="">Chọn kênh</option>
+                {channels.map(ch => (
+                  <option key={ch.id} value={ch.id}>{ch.name}</option>
+                ))}
+              </select>
+              <input
+                type="number"
+                placeholder="Chi phí (VNĐ)"
+                value={channel.cost}
+                onChange={(e) => handleChannelChange(index, 'cost', e.target.value)}
+                min="0"
+                style={{ width: '150px', padding: '10px', borderRadius: '5px', border: '1px solid var(--border)' }}
+              />
+              <button
+                type="button"
+                onClick={() => handleRemoveChannel(index)}
+                style={{
+                  padding: '10px 15px',
+                  background: '#dc3545',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '5px',
+                  cursor: 'pointer'
+                }}
+              >
+                Xóa
+              </button>
+            </div>
+          ))}
+          
+          {campaignChannels.length === 0 && (
+            <small style={{ color: '#666', fontSize: '12px' }}>
+              Chưa có kênh nào. Nhấn "Thêm kênh" để thêm kênh truyền thông cho chiến dịch này.
+            </small>
+          )}
         </div>
 
         <div className={styles.buttonGroup}>

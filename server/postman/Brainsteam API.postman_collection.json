@@ -1,0 +1,101 @@
+{
+  "info": {
+    "name": "Brainsteam API",
+    "description": "Complete API collection for Brainsteam server. Just import this file - no environment needed!",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/health"
+      }
+    },
+    {
+      "name": "Users",
+      "item": [
+        { "name": "List Users", "request": { "method": "GET", "url": "{{baseUrl}}/api/users" } },
+        { "name": "Create User", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw": "{\n  \"name\": \"New User\"\n}"}, "url": "{{baseUrl}}/api/users" } },
+        { "name": "Get User", "request": { "method": "GET", "url": "{{baseUrl}}/api/users/1" } },
+        { "name": "Update User", "request": { "method": "PUT", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw": "{\n  \"name\": \"Updated User\"\n}"}, "url": "{{baseUrl}}/api/users/1" } },
+        { "name": "Delete User", "request": { "method": "DELETE", "url": "{{baseUrl}}/api/users/1" } }
+      ]
+    },
+    {
+      "name": "Leads",
+      "item": [
+        { "name": "List Leads", "request": { "method": "GET", "url": "{{baseUrl}}/api/leads?page=1&size=10&search=&status=&interestLevel=&campaignId=&channelId=&assignedStaffId=&tags=&sortBy=createdAt&sortDirection=desc" } },
+        { "name": "Summary", "request": { "method": "GET", "url": "{{baseUrl}}/api/leads/summary" } },
+        { "name": "Get Lead", "request": { "method": "GET", "url": "{{baseUrl}}/api/leads/1" } },
+        { "name": "Create Lead", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw": "{\n  \"fullName\": \"New Lead\",\n  \"email\": \"lead@example.com\",\n  \"phone\": \"0900\",\n  \"campaignId\": 1,\n  \"channelId\": 1,\n  \"assignedStaffId\": 1,\n  \"tags\": [\"hot\"]\n}"}, "url": "{{baseUrl}}/api/leads" } },
+        { "name": "Update Lead", "request": { "method": "PUT", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw": "{\n  \"status\": \"contacted\"\n}"}, "url": "{{baseUrl}}/api/leads/1" } },
+        { "name": "Delete Lead", "request": { "method": "DELETE", "url": "{{baseUrl}}/api/leads/1" } },
+        { "name": "Convert Lead", "request": { "method": "POST", "url": "{{baseUrl}}/api/leads/1/convert" } }
+      ]
+    },
+    {
+      "name": "Campaigns",
+      "item": [
+        { "name": "List Campaigns", "request": { "method": "GET", "url": "{{baseUrl}}/api/campaigns?page=1&size=10&search=&status=&channelId=&sortBy=name&sortDirection=asc" } },
+        { "name": "Summary", "request": { "method": "GET", "url": "{{baseUrl}}/api/campaigns/summary" } },
+        { "name": "Get Campaign", "request": { "method": "GET", "url": "{{baseUrl}}/api/campaigns/1" } },
+        { "name": "Metrics", "request": { "method": "GET", "url": "{{baseUrl}}/api/campaigns/1/metrics" } },
+        { "name": "Create Campaign", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw": "{\n  \"name\": \"New Campaign\",\n  \"status\": \"running\",\n  \"channelId\": 1,\n  \"ownerStaffId\": 1,\n  \"budget\": 1000,\n  \"spend\": 200,\n  \"roi\": 1.5\n}"}, "url": "{{baseUrl}}/api/campaigns" } },
+        { "name": "Update Campaign", "request": { "method": "PUT", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw": "{\n  \"status\": \"paused\"\n}"}, "url": "{{baseUrl}}/api/campaigns/1" } },
+        { "name": "Delete Campaign", "request": { "method": "DELETE", "url": "{{baseUrl}}/api/campaigns/1" } }
+      ]
+    },
+    {
+      "name": "Channels",
+      "item": [
+        { "name": "List Channels", "request": { "method": "GET", "url": "{{baseUrl}}/api/channels?page=1&size=10&search=&type=&status=&sortBy=name&sortDirection=asc" } },
+        { "name": "Summary", "request": { "method": "GET", "url": "{{baseUrl}}/api/channels/summary" } },
+        { "name": "Get Channel", "request": { "method": "GET", "url": "{{baseUrl}}/api/channels/1" } },
+        { "name": "Channel Campaigns", "request": { "method": "GET", "url": "{{baseUrl}}/api/channels/1/campaigns?page=1&size=5&sortBy=name&sortDirection=asc" } }
+      ]
+    },
+    {
+      "name": "Staff",
+      "item": [
+        { "name": "List Staff", "request": { "method": "GET", "url": "{{baseUrl}}/api/staff?page=1&size=10&search=&role=&status=&department=&campaignId=&sortBy=name&sortDirection=asc" } },
+        { "name": "Summary", "request": { "method": "GET", "url": "{{baseUrl}}/api/staff/summary" } },
+        { "name": "Get Staff", "request": { "method": "GET", "url": "{{baseUrl}}/api/staff/1" } },
+        { "name": "Create Staff", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw": "{\n  \"name\": \"New Staff\",\n  \"role\": \"sales\",\n  \"status\": \"active\",\n  \"department\": \"Sales\"\n}"}, "url": "{{baseUrl}}/api/staff" } },
+        { "name": "Update Staff", "request": { "method": "PUT", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw": "{\n  \"status\": \"inactive\"\n}"}, "url": "{{baseUrl}}/api/staff/1" } },
+        { "name": "Assign Campaigns", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw": "{\n  \"campaignIds\": [1,2]\n}"}, "url": "{{baseUrl}}/api/staff/2/assign-campaigns" } },
+        { "name": "Delete Staff", "request": { "method": "DELETE", "url": "{{baseUrl}}/api/staff/1" } }
+      ]
+    },
+    {
+      "name": "Students",
+      "item": [
+        { "name": "List Students", "request": { "method": "GET", "url": "{{baseUrl}}/api/students?page=1&size=10&search=&status=&enrollmentStatus=&campaignId=&channelId=&assignedStaffId=&newStudent=&sortBy=fullName&sortDirection=asc" } },
+        { "name": "Summary", "request": { "method": "GET", "url": "{{baseUrl}}/api/students/summary" } },
+        { "name": "Get Student", "request": { "method": "GET", "url": "{{baseUrl}}/api/students/1" } },
+        { "name": "Create Student", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw": "{\n  \"fullName\": \"New Student\",\n  \"email\": \"s@example.com\",\n  \"phone\": \"0901\",\n  \"campaignId\": 1,\n  \"channelId\": 1,\n  \"assignedStaffId\": 1,\n  \"newStudent\": true\n}"}, "url": "{{baseUrl}}/api/students" } },
+        { "name": "Update Student", "request": { "method": "PUT", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw": "{\n  \"enrollmentStatus\": \"enrolled\"\n}"}, "url": "{{baseUrl}}/api/students/1" } },
+        { "name": "Delete Student", "request": { "method": "DELETE", "url": "{{baseUrl}}/api/students/1" } }
+      ]
+    },
+    {
+      "name": "Forms",
+      "item": [
+        { "name": "List Forms", "request": { "method": "GET", "url": "{{baseUrl}}/api/forms?page=1&size=10&search=&status=&sortBy=name&sortDirection=asc" } },
+        { "name": "Get Form", "request": { "method": "GET", "url": "{{baseUrl}}/api/forms/1" } },
+        { "name": "Get Embed", "request": { "method": "GET", "url": "{{baseUrl}}/api/forms/1/embed" } },
+        { "name": "Create Form", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw": "{\n  \"name\": \"Registration Form\",\n  \"status\": \"active\",\n  \"fields\": [\n    {\"id\":\"fullName\",\"label\":\"Họ và tên\",\"type\":\"text\",\"required\":true},\n    {\"id\":\"email\",\"label\":\"Email\",\"type\":\"email\",\"required\":true}\n  ],\n  \"settings\": { \"submitText\": \"Đăng ký\", \"theme\": \"dark\" }\n}"}, "url": "{{baseUrl}}/api/forms" } },
+        { "name": "Update Form", "request": { "method": "PUT", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw": "{\n  \"status\": \"inactive\"\n}"}, "url": "{{baseUrl}}/api/forms/1" } },
+        { "name": "Delete Form", "request": { "method": "DELETE", "url": "{{baseUrl}}/api/forms/1" } }
+      ]
+    }
+  ]
+}
+

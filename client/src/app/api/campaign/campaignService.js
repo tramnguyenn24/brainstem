@@ -69,6 +69,18 @@ export const campaignService = {
     }
   },
 
+  getCampaignDetails: async id => {
+    try {
+      const { data } = await apiRequest(`${API_BASE_URL}/api/campaigns/${id}/details`, {
+        method: 'GET'
+      });
+      return data;
+    } catch (error) {
+      console.error('Error fetching campaign details:', error);
+      throw error;
+    }
+  },
+
   getCampaignMetrics: async id => {
     try {
       const { data } = await apiRequest(`${API_BASE_URL}/api/campaigns/${id}/metrics`, {
@@ -92,7 +104,9 @@ export const campaignService = {
           ownerStaffId: campaign.ownerStaffId,
           budget: campaign.budget,
           spend: campaign.spend,
-          roi: campaign.roi
+          cost: campaign.cost,
+          revenue: campaign.revenue,
+          channels: campaign.channels || []
         })
       });
       return data;
