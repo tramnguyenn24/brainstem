@@ -1,10 +1,8 @@
 import React, { Suspense } from 'react';
-import Navbar from './ui/dashboard/navbar/navbar';
-import Sidebar from './ui/dashboard/sidebar/sidebar';
 import ClientProviders from './components/ClientProviders';
 import PageTitle from './components/PageTitle';
+import ConditionalLayout from './components/ConditionalLayout';
 
-import Style from "./styles/dashboard.module.css";
 import "./styles/globals.css";
 
 export const metadata = {
@@ -21,15 +19,9 @@ const RootLayout = ({children}) => {
 			<body>
 				<PageTitle title="Brainstem" />
 				<ClientProviders>
-					<div className={Style.container}>
-						<div className={Style.menu}>
-							<Sidebar />
-						</div>
-						<div className={Style.content}>
-							<Navbar />
-							{children}
-						</div>
-					</div>
+					<ConditionalLayout>
+						{children}
+					</ConditionalLayout>
 				</ClientProviders>
 			</body>
 		</html>

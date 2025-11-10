@@ -106,6 +106,19 @@ export const formService = {
       console.error('Error deleting form:', error);
       throw error;
     }
+  },
+
+  submitForm: async (id, formData) => {
+    try {
+      const { data } = await apiRequest(`${API_BASE_URL}/api/forms/${id}/submit`, {
+        method: 'POST',
+        body: JSON.stringify(formData)
+      });
+      return data;
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      throw error;
+    }
   }
 };
 

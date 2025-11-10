@@ -245,7 +245,19 @@ const FormsPage = () => {
     try {
       // Fetch embed code from API
       const embedData = await formService.getFormEmbed(form.id);
-      setSelectedForm({ ...form, ...embedData });
+      
+      // Đảm bảo có embedUrl và embedCode
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
+      const embedUrl = embedData.embedUrl || `${baseUrl}/forms/embed/${form.id}`;
+      const embedCode = embedData.embedCode || `<iframe src="${embedUrl}" width="100%" height="600" frameborder="0" style="border: none; border-radius: 8px;"></iframe>`;
+      
+      setSelectedForm({ 
+        ...form, 
+        embedCode: embedCode,
+        EmbedCode: embedCode, // Backward compatibility
+        embedUrl: embedUrl,
+        scriptEmbedCode: embedData.scriptEmbedCode
+      });
       setShowEmbedModal(true);
     } catch (err) {
       console.error("Error fetching embed code:", err);
@@ -655,34 +667,106 @@ const FormsPage = () => {
       {/* Embed Modal */}
       {showEmbedModal && (
         <div className={Style.modalOverlay}>
-          <div className={Style.modal} style={{ maxWidth: '800px' }}>
+          <div className={Style.modal} style={{ maxWidth: '900px', maxHeight: '90vh', overflowY: 'auto' }}>
             <h2>Embed Code - {selectedForm?.name || selectedForm?.TenForm}</h2>
             <p>Copy đoạn code dưới đây để nhúng form vào website của bạn:</p>
             
-            <div className={Style.embedCodeContainer}>
-              <textarea
-                value={selectedForm?.EmbedCode || ''}
-                readOnly
-                className={Style.embedCode}
-                rows={8}
-              />
-              <button 
-                className={Style.copyButton}
-                onClick={() => {
-                  navigator.clipboard.writeText(selectedForm?.EmbedCode || '');
-                  toast.success('Đã copy embed code!');
-                }}
-              >
-                Copy Code
-              </button>
+            {/* Iframe Embed Code */}
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600 }}>
+                Option 1: Iframe (Đơn giản nhất)
+              </label>
+              <div className={Style.embedCodeContainer}>
+                <textarea
+                  value={selectedForm?.embedCode || selectedForm?.EmbedCode || ''}
+                  readOnly
+                  className={Style.embedCode}
+                  rows={3}
+                />
+                <button 
+                  className={Style.copyButton}
+                  onClick={() => {
+                    navigator.clipboard.writeText(selectedForm?.embedCode || selectedForm?.EmbedCode || '');
+                    toast.success('Đã copy iframe code!');
+                  }}
+                >
+                  Copy Iframe
+                </button>
+              </div>
             </div>
 
+            {/* Script Embed Code */}
+            {selectedForm?.scriptEmbedCode && (
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600 }}>
+                  Option 2: Script Tag (Linh hoạt hơn)
+                </label>
+                <div className={Style.embedCodeContainer}>
+                  <textarea
+                    value={selectedForm.scriptEmbedCode}
+                    readOnly
+                    className={Style.embedCode}
+                    rows={8}
+                  />
+                  <button 
+                    className={Style.copyButton}
+                    onClick={() => {
+                      navigator.clipboard.writeText(selectedForm.scriptEmbedCode);
+                      toast.success('Đã copy script code!');
+                    }}
+                  >
+                    Copy Script
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Direct URL */}
+            {selectedForm?.embedUrl && (
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600 }}>
+                  Direct URL:
+                </label>
+                <div className={Style.embedCodeContainer}>
+                  <input
+                    type="text"
+                    value={selectedForm.embedUrl}
+                    readOnly
+                    className={Style.embedCode}
+                    style={{ padding: '10px', fontSize: '14px' }}
+                  />
+                  <button 
+                    className={Style.copyButton}
+                    onClick={() => {
+                      navigator.clipboard.writeText(selectedForm.embedUrl);
+                      toast.success('Đã copy URL!');
+                    }}
+                  >
+                    Copy URL
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Preview */}
             <div className={Style.previewContainer}>
               <h3>Preview:</h3>
-              <div 
-                className={Style.previewFrame}
-                dangerouslySetInnerHTML={{ __html: selectedForm?.EmbedCode || '' }}
-              />
+              <div className={Style.previewFrame}>
+                {selectedForm?.embedUrl ? (
+                  <iframe
+                    src={selectedForm.embedUrl}
+                    width="100%"
+                    height="600"
+                    frameBorder="0"
+                    style={{ borderRadius: '8px', border: '1px solid #e2e8f0' }}
+                    title="Form Preview"
+                  />
+                ) : (
+                  <div style={{ padding: '20px', textAlign: 'center', color: '#718096' }}>
+                    Preview sẽ hiển thị ở đây
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className={Style.modalButtons}>

@@ -52,7 +52,35 @@ exports.getEmbed = async (req, res) => {
   const id = Number(req.params.id);
   const form = await AppDataSource.getRepository('Form').findOne({ where: { id } });
   if (!form) return res.status(404).json({ message: 'Form not found' });
-  res.json({ id: form.id, name: form.name, embedCode: form.embedCode });
+  
+  // Tạo embed code với URL động
+  const baseUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+  const embedUrl = `${baseUrl}/forms/embed/${id}`;
+  
+  // Tạo iframe embed code
+  const embedCode = `<iframe src="${embedUrl}" width="100%" height="600" frameborder="0" style="border-radius: 8px;"></iframe>`;
+  
+  // Tạo script embed code (alternative)
+  const scriptEmbedCode = `<div id="brainstem-form-${id}"></div>
+<script>
+  (function() {
+    var iframe = document.createElement('iframe');
+    iframe.src = '${embedUrl}';
+    iframe.width = '100%';
+    iframe.height = '600';
+    iframe.frameBorder = '0';
+    iframe.style.borderRadius = '8px';
+    document.getElementById('brainstem-form-${id}').appendChild(iframe);
+  })();
+</script>`;
+  
+  res.json({ 
+    id: form.id, 
+    name: form.name, 
+    embedCode: embedCode,
+    embedUrl: embedUrl,
+    scriptEmbedCode: scriptEmbedCode
+  });
 };
 
 exports.create = async (req, res) => {
@@ -114,10 +142,15 @@ exports.create = async (req, res) => {
     updatedAt: new Date()
   };
   const saved = await repo.save(form);
+  
+  // Tạo embed code với URL động
+  const baseUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+  const embedUrl = `${baseUrl}/forms/embed/${saved.id}`;
+  const embedCode = `<iframe src="${embedUrl}" width="100%" height="600" frameborder="0" style="border-radius: 8px;"></iframe>`;
+  
   if (!saved.embedCode) {
-    saved.embedCode = `<iframe src="https://example.com/embed/form/${saved.id}" width="100%" height="500" frameborder="0"></iframe>`;
-    await repo.update(saved.id, { embedCode: saved.embedCode });
-    saved.embedCode = saved.embedCode;
+    await repo.update(saved.id, { embedCode: embedCode });
+    saved.embedCode = embedCode;
   }
   res.status(201).json(saved);
 };
@@ -182,6 +215,17 @@ exports.update = async (req, res) => {
     updatedAt: new Date()
   };
   const saved = await repo.save(updated);
+  
+  // Cập nhật embed code nếu cần
+  const baseUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+  const embedUrl = `${baseUrl}/forms/embed/${saved.id}`;
+  const embedCode = `<iframe src="${embedUrl}" width="100%" height="600" frameborder="0" style="border: none; border-radius: 8px;"></iframe>`;
+  
+  if (!saved.embedCode || !saved.embedCode.includes(embedUrl)) {
+    await repo.update(saved.id, { embedCode: embedCode });
+    saved.embedCode = embedCode;
+  }
+  
   res.json(saved);
 };
 
@@ -227,7 +271,8 @@ exports.submitForm = async (req, res) => {
   );
   
   if (channelField) {
-    const channelValue = formData[channelField.id] || formData[channelField.label];
+    const fieldId = channelField.id || channelField.label?.toLowerCase().replace(/\s+/g, '');
+    const channelValue = formData[fieldId] || formData[channelField.id] || formData[channelField.label] || '';
     if (channelValue) {
       // Nếu là số, dùng trực tiếp
       if (typeof channelValue === 'number') {
@@ -250,11 +295,43 @@ exports.submitForm = async (req, res) => {
     }
   }
   
+  // Map form data sang lead fields
+  // Tìm các field trong form để map đúng
+  let fullName = '';
+  let email = '';
+  let phone = '';
+  
+  if (form.fields && Array.isArray(form.fields)) {
+    form.fields.forEach(field => {
+      const fieldId = field.id || field.label?.toLowerCase().replace(/\s+/g, '');
+      const value = formData[fieldId] || formData[field.label] || '';
+      
+      // Map các field phổ biến
+      if (field.type === 'text' || field.type === 'email') {
+        const labelLower = (field.label || '').toLowerCase();
+        if (labelLower.includes('họ tên') || labelLower.includes('tên') || labelLower.includes('name') || fieldId.includes('hoten') || fieldId.includes('fullname') || fieldId.includes('name')) {
+          fullName = value || fullName;
+        } else if (labelLower.includes('email') || fieldId.includes('email')) {
+          email = value || email;
+        } else if (labelLower.includes('điện thoại') || labelLower.includes('phone') || labelLower.includes('số điện') || fieldId.includes('phone') || fieldId.includes('sdt') || fieldId.includes('sodienthoai')) {
+          phone = value || phone;
+        }
+      } else if (field.type === 'tel') {
+        phone = value || phone;
+      }
+    });
+  }
+  
+  // Fallback: thử các key phổ biến
+  fullName = fullName || formData.fullName || formData.name || formData.hoten || formData['họ tên'] || '';
+  email = email || formData.email || formData['email'] || '';
+  phone = phone || formData.phone || formData.sdt || formData.sodienthoai || formData['số điện thoại'] || '';
+  
   // Tạo lead từ form data
   const newLead = {
-    fullName: formData.fullName || formData.name || formData.hoten || '',
-    email: formData.email || '',
-    phone: formData.phone || formData.sdt || formData.sodienthoai || '',
+    fullName: fullName,
+    email: email,
+    phone: phone,
     status: 'new',
     interestLevel: formData.interestLevel || 'medium',
     campaignId: campaignId,
