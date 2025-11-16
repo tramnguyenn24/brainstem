@@ -16,9 +16,16 @@ async function toEnrichedLead(lead) {
 }
 
 function buildQueryBuilder(query) {
-  const { search, status, interestLevel, campaignId, channelId, assignedStaffId, tags } = query;
+  const { search, status, interestLevel, campaignId, channelId, assignedStaffId, tags, campaignName } = query;
   const repo = AppDataSource.getRepository('Lead');
   const qb = repo.createQueryBuilder('lead');
+  
+  // Tìm kiếm theo tên chiến dịch
+  if (campaignName) {
+    qb.innerJoin('campaigns', 'camp', 'camp.id = lead.campaignId');
+    const q = String(campaignName).toLowerCase();
+    qb.andWhere('LOWER(camp.name) LIKE :campaignName', { campaignName: `%${q}%` });
+  }
   
   if (status) {
     const values = String(status).split(',').map(s => s.trim());
@@ -108,11 +115,24 @@ exports.getLeads = async (req, res) => {
 
 exports.getLeadSummary = async (req, res) => {
   const qb = buildQueryBuilder(req.query);
+  
+  // Apply time filter if provided
+  const { startDate, endDate } = req.query;
+  if (startDate || endDate) {
+    if (startDate) {
+      qb.andWhere('lead.createdAt >= :startDate', { startDate: new Date(startDate) });
+    }
+    if (endDate) {
+      qb.andWhere('lead.createdAt <= :endDate', { endDate: new Date(endDate) });
+    }
+  }
+  
   const leads = await qb.getMany();
   const total = leads.length;
   const byStatus = {};
   const byChannel = {};
   const byCampaign = {};
+  let newLeadsCount = 0;
   
   for (const l of leads) {
     byStatus[l.status] = (byStatus[l.status] || 0) + 1;
@@ -122,9 +142,14 @@ exports.getLeadSummary = async (req, res) => {
     const camp = l.campaignId ? await AppDataSource.getRepository('Campaign').findOne({ where: { id: l.campaignId } }) : null;
     const campName = camp ? camp.name : 'Unknown';
     byCampaign[campName] = (byCampaign[campName] || 0) + 1;
+    
+    // Đếm leads mới (status = 'new' hoặc 'INTERESTED')
+    if (l.status === 'new' || l.status === 'INTERESTED' || !l.status) {
+      newLeadsCount++;
+    }
   }
   
-  res.json({ total, byStatus, byChannel, byCampaign });
+  res.json({ total, newLeadsCount, byStatus, byChannel, byCampaign });
 };
 
 exports.getLeadById = async (req, res) => {

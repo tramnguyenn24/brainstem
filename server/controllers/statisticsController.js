@@ -169,6 +169,348 @@ exports.getStatistics = async (req, res) => {
   }
 };
 
+// Get dashboard statistics with month-over-month comparison
+exports.getDashboardStats = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    
+    // Parse dates - default to current month
+    const now = new Date();
+    const end = endDate ? new Date(endDate) : new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const start = startDate ? new Date(startDate) : new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    // Calculate previous month for comparison
+    const prevMonthEnd = new Date(start.getTime() - 1);
+    const prevMonthStart = new Date(prevMonthEnd.getFullYear(), prevMonthEnd.getMonth(), 1);
+    
+    // Get repositories
+    const studentRepo = AppDataSource.getRepository('Student');
+    const campaignRepo = AppDataSource.getRepository('Campaign');
+    const leadRepo = AppDataSource.getRepository('Lead');
+    const channelRepo = AppDataSource.getRepository('Channel');
+    
+    // Get all data
+    const [allStudents, allCampaigns, allLeads] = await Promise.all([
+      studentRepo.find(),
+      campaignRepo.find(),
+      leadRepo.find()
+    ]);
+    
+    // Filter current period
+    const currentStudents = allStudents.filter(s => {
+      const createdAt = new Date(s.createdAt);
+      return createdAt >= start && createdAt <= end;
+    });
+    
+    const currentCampaigns = allCampaigns.filter(c => {
+      const createdAt = new Date(c.createdAt);
+      return createdAt >= start && createdAt <= end;
+    });
+    
+    const currentLeads = allLeads.filter(l => {
+      const createdAt = new Date(l.createdAt);
+      return createdAt >= start && createdAt <= end;
+    });
+    
+    // Filter previous period
+    const prevStudents = allStudents.filter(s => {
+      const createdAt = new Date(s.createdAt);
+      return createdAt >= prevMonthStart && createdAt <= prevMonthEnd;
+    });
+    
+    const prevCampaigns = allCampaigns.filter(c => {
+      const createdAt = new Date(c.createdAt);
+      return createdAt >= prevMonthStart && createdAt <= prevMonthEnd;
+    });
+    
+    const prevLeads = allLeads.filter(l => {
+      const createdAt = new Date(l.createdAt);
+      return createdAt >= prevMonthStart && createdAt <= prevMonthEnd;
+    });
+    
+    // Calculate total revenue (from all campaigns)
+    // Revenue should be calculated from campaign.revenue or from students' course prices
+    let currentRevenue = 0;
+    for (const c of allCampaigns) {
+      // Use campaign.revenue if available
+      if (c.revenue) {
+        currentRevenue += Number(c.revenue);
+      } else {
+        // Calculate from students' course prices for this campaign
+        const campaignStudents = allStudents.filter(s => s.campaignId === c.id);
+        for (const student of campaignStudents) {
+          if (student.courseId) {
+            const course = await courseRepo.findOne({ where: { id: student.courseId } });
+            if (course && course.price) {
+              currentRevenue += Number(course.price);
+            }
+          }
+        }
+      }
+    }
+    
+    // For previous month, calculate revenue from campaigns created in previous month
+    let prevRevenue = 0;
+    for (const c of allCampaigns) {
+      const createdAt = new Date(c.createdAt);
+      if (createdAt >= prevMonthStart && createdAt <= prevMonthEnd) {
+        if (c.revenue) {
+          prevRevenue += Number(c.revenue);
+        } else {
+          const campaignStudents = allStudents.filter(s => s.campaignId === c.id);
+          for (const student of campaignStudents) {
+            if (student.courseId) {
+              const course = await courseRepo.findOne({ where: { id: student.courseId } });
+              if (course && course.price) {
+                prevRevenue += Number(course.price);
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    const revenueChange = prevRevenue > 0 
+      ? ((currentRevenue - prevRevenue) / prevRevenue * 100).toFixed(1)
+      : currentRevenue > 0 ? 100 : 0;
+    
+    // Calculate registered students (enrolled)
+    const currentRegistered = allStudents.filter(s => {
+      const createdAt = new Date(s.createdAt);
+      return createdAt >= start && createdAt <= end && s.enrollmentStatus === 'enrolled';
+    }).length;
+    
+    const prevRegistered = allStudents.filter(s => {
+      const createdAt = new Date(s.createdAt);
+      return createdAt >= prevMonthStart && createdAt <= prevMonthEnd && s.enrollmentStatus === 'enrolled';
+    }).length;
+    
+    const registeredChange = prevRegistered > 0
+      ? ((currentRegistered - prevRegistered) / prevRegistered * 100).toFixed(1)
+      : currentRegistered > 0 ? 100 : 0;
+    
+    // Calculate completion rate (students with status 'completed' or enrollmentStatus 'completed')
+    const currentCompleted = allStudents.filter(s => {
+      const createdAt = new Date(s.createdAt);
+      return createdAt >= start && createdAt <= end && 
+             (s.status === 'completed' || s.enrollmentStatus === 'completed');
+    }).length;
+    
+    const currentTotal = allStudents.filter(s => {
+      const createdAt = new Date(s.createdAt);
+      return createdAt >= start && createdAt <= end;
+    }).length;
+    
+    const prevCompleted = allStudents.filter(s => {
+      const createdAt = new Date(s.createdAt);
+      return createdAt >= prevMonthStart && createdAt <= prevMonthEnd && 
+             (s.status === 'completed' || s.enrollmentStatus === 'completed');
+    }).length;
+    
+    const prevTotal = allStudents.filter(s => {
+      const createdAt = new Date(s.createdAt);
+      return createdAt >= prevMonthStart && createdAt <= prevMonthEnd;
+    }).length;
+    
+    const currentCompletionRate = currentTotal > 0 ? (currentCompleted / currentTotal * 100) : 0;
+    const prevCompletionRate = prevTotal > 0 ? (prevCompleted / prevTotal * 100) : 0;
+    const completionChange = prevCompletionRate > 0
+      ? (currentCompletionRate - prevCompletionRate).toFixed(1)
+      : currentCompletionRate > 0 ? currentCompletionRate.toFixed(1) : 0;
+    
+    // Calculate currently studying students (active status)
+    const currentStudying = allStudents.filter(s => s.status === 'active').length;
+    const prevStudying = allStudents.filter(s => {
+      const createdAt = new Date(s.createdAt);
+      return createdAt < prevMonthStart && s.status === 'active';
+    }).length;
+    
+    const studyingChange = prevStudying > 0
+      ? ((currentStudying - prevStudying) / prevStudying * 100).toFixed(1)
+      : currentStudying > 0 ? 100 : 0;
+    
+    // Get running campaigns
+    const runningCampaigns = allCampaigns.filter(c => c.status === 'running');
+    
+    // Calculate total spent (from campaigns)
+    const totalSpent = allCampaigns.reduce((sum, c) => sum + (Number(c.cost) || 0), 0);
+    
+    // Calculate total potential students (leads)
+    const totalPotentialStudents = allLeads.length;
+    
+    // Calculate total registered students
+    const totalRegisteredStudents = allStudents.filter(s => s.enrollmentStatus === 'enrolled').length;
+    
+    // Calculate conversion rate (leads to enrollment)
+    const conversionRate = allLeads.length > 0
+      ? (totalRegisteredStudents / allLeads.length * 100).toFixed(2)
+      : 0;
+    
+    // Get new students by campaign for chart
+    const campaignsWithNewStudents = await Promise.all(
+      allCampaigns.map(async (c) => {
+        const metrics = await calculateCampaignMetrics(c.id);
+        return {
+          id: c.id,
+          name: c.name,
+          newStudentsCount: metrics.newStudentsCount || 0
+        };
+      })
+    );
+    
+    // Get new students by month
+    const newStudentsByMonth = [];
+    const months = [];
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+      months.push({
+        month: date.toLocaleDateString('vi-VN', { month: 'short', year: 'numeric' }),
+        start: date,
+        end: monthEnd
+      });
+    }
+    
+    for (const month of months) {
+      const count = allStudents.filter(s => {
+        const createdAt = new Date(s.createdAt);
+        return createdAt >= month.start && createdAt <= month.end;
+      }).length;
+      newStudentsByMonth.push({
+        month: month.month,
+        count
+      });
+    }
+    
+    // Get ROI by campaign
+    const roiByCampaign = await Promise.all(
+      allCampaigns.map(async (c) => {
+        const enriched = await toEnrichedCampaign(c);
+        return {
+          id: c.id,
+          name: c.name,
+          roi: enriched.roi || 0
+        };
+      })
+    );
+    
+    // Get leads and new students by channel
+    const leadsByChannel = {};
+    const studentsByChannel = {};
+    
+    for (const lead of allLeads) {
+      if (lead.channelId) {
+        const channel = await channelRepo.findOne({ where: { id: lead.channelId } });
+        const channelName = channel ? channel.name : 'Unknown';
+        leadsByChannel[channelName] = (leadsByChannel[channelName] || 0) + 1;
+      }
+    }
+    
+    for (const student of allStudents) {
+      if (student.channelId) {
+        const channel = await channelRepo.findOne({ where: { id: student.channelId } });
+        const channelName = channel ? channel.name : 'Unknown';
+        studentsByChannel[channelName] = (studentsByChannel[channelName] || 0) + 1;
+      }
+    }
+    
+    const channelStats = Object.keys({...leadsByChannel, ...studentsByChannel}).map(channelName => ({
+      channel: channelName,
+      leads: leadsByChannel[channelName] || 0,
+      students: studentsByChannel[channelName] || 0
+    }));
+    
+    res.json({
+      summary: {
+        totalRevenue: {
+          value: currentRevenue,
+          change: parseFloat(revenueChange),
+          formatted: `${(currentRevenue / 1000000000).toFixed(1)} Tr`
+        },
+        registeredStudents: {
+          value: currentRegistered,
+          change: parseFloat(registeredChange),
+          formatted: currentRegistered.toString()
+        },
+        completionRate: {
+          value: currentCompletionRate,
+          change: parseFloat(completionChange),
+          formatted: `${currentCompletionRate.toFixed(1)}%`
+        },
+        currentlyStudying: {
+          value: currentStudying,
+          change: parseFloat(studyingChange),
+          formatted: currentStudying.toLocaleString('vi-VN')
+        }
+      },
+      quickStats: {
+        runningCampaigns: runningCampaigns.length,
+        totalSpent,
+        totalPotentialStudents,
+        totalRegisteredStudents,
+        conversionRate: parseFloat(conversionRate)
+      },
+      charts: {
+        newStudentsByCampaign: campaignsWithNewStudents.filter(c => c.newStudentsCount > 0),
+        newStudentsByMonth,
+        roiByCampaign: roiByCampaign.filter(c => c.roi > 0),
+        channelStats
+      }
+    });
+  } catch (error) {
+    console.error('Error getting dashboard statistics:', error);
+    res.status(500).json({ error: 'Failed to get dashboard statistics', message: error.message });
+  }
+};
+
+// Helper function to calculate campaign metrics
+async function calculateCampaignMetrics(campaignId) {
+  const studentRepo = AppDataSource.getRepository('Student');
+  const leadRepo = AppDataSource.getRepository('Lead');
+  const courseRepo = AppDataSource.getRepository('Course');
+  
+  const [students, leads] = await Promise.all([
+    studentRepo.find({ where: { campaignId } }),
+    leadRepo.find({ where: { campaignId } })
+  ]);
+  
+  const newStudents = students.filter(s => s.newStudent === true);
+  
+  // Calculate revenue from course prices
+  let revenue = 0;
+  for (const student of students) {
+    if (student.courseId) {
+      const course = await courseRepo.findOne({ where: { id: student.courseId } });
+      if (course && course.price) {
+        revenue += Number(course.price);
+      }
+    }
+  }
+  
+  return {
+    newStudentsCount: newStudents.length,
+    potentialStudentsCount: leads.length,
+    revenue
+  };
+}
+
+// Helper function to enrich campaign
+async function toEnrichedCampaign(c) {
+  const metrics = await calculateCampaignMetrics(c.id);
+  const revenue = Number(c.revenue || metrics.revenue || 0);
+  const cost = Number(c.cost || 0);
+  const roi = cost > 0 ? ((revenue - cost) / cost) * 100 : 0;
+  
+  return {
+    ...c,
+    revenue,
+    cost,
+    roi,
+    newStudentsCount: metrics.newStudentsCount || 0,
+    potentialStudentsCount: metrics.potentialStudentsCount || 0
+  };
+}
+
 // Download revenue export (CSV)
 exports.downloadRevenueExport = async (req, res) => {
   try {

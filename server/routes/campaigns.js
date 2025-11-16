@@ -5,6 +5,7 @@ const router = express.Router();
 
 router.get('/', ctrl.getCampaigns);
 router.get('/summary', ctrl.getSummary);
+router.get('/featured', ctrl.getFeaturedCampaigns);
 router.get('/:id', ctrl.getById);
 router.get('/:id/details', ctrl.getCampaignDetails);
 router.get('/:id/metrics', ctrl.getMetrics);

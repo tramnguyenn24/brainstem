@@ -5,6 +5,7 @@ const router = express.Router();
 
 router.get('/', ctrl.getStudents);
 router.get('/summary', ctrl.getStudentSummary);
+router.get('/recent-enrollments', ctrl.getRecentEnrollments);
 router.get('/:id', ctrl.getStudentById);
 router.post('/', ctrl.createStudent);
 router.put('/:id', ctrl.updateStudent);

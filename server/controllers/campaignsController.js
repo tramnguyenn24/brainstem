@@ -213,21 +213,233 @@ exports.getCampaigns = async (req, res) => {
 
 exports.getSummary = async (req, res) => {
   const qb = buildQueryBuilder(req.query);
+  
+  // Apply time filter if provided
+  const { startDate, endDate } = req.query;
+  if (startDate || endDate) {
+    if (startDate) {
+      qb.andWhere('campaign.createdAt >= :startDate', { startDate: new Date(startDate) });
+    }
+    if (endDate) {
+      qb.andWhere('campaign.createdAt <= :endDate', { endDate: new Date(endDate) });
+    }
+  }
+  
   const items = await qb.getMany();
   const total = items.length;
   const byStatus = {};
   const byChannel = {};
   let avgRoi = 0;
+  let totalSpent = 0;
+  let totalRevenue = 0;
+  let totalNewStudents = 0;
   
-  for (const c of items) {
+  // Enrich all campaigns to get accurate metrics
+  const enrichedItems = await Promise.all(items.map(toEnrichedCampaign));
+  
+  for (const c of enrichedItems) {
     byStatus[c.status] = (byStatus[c.status] || 0) + 1;
     const ch = c.channelId ? await AppDataSource.getRepository('Channel').findOne({ where: { id: c.channelId } }) : null;
     const chName = ch ? ch.name : 'Unknown';
     byChannel[chName] = (byChannel[chName] || 0) + 1;
     if (typeof c.roi === 'number') avgRoi += c.roi;
+    
+    // Sum up totals
+    totalSpent += Number(c.cost || 0);
+    totalRevenue += Number(c.revenue || 0);
+    totalNewStudents += Number(c.newStudentsCount || 0);
   }
   avgRoi = total ? avgRoi / total : 0;
-  res.json({ total, byStatus, byChannel, avgRoi });
+  
+  res.json({ 
+    total, 
+    byStatus, 
+    byChannel, 
+    avgRoi,
+    totalSpent,
+    totalRevenue,
+    totalNewStudents,
+    running: byStatus.running || 0,
+    completed: byStatus.completed || 0,
+    paused: byStatus.paused || 0
+  });
+};
+
+// Calculate metrics for a specific month
+async function calculateMonthMetrics(campaignId, monthStart, monthEnd) {
+  const studentRepo = AppDataSource.getRepository('Student');
+  const leadRepo = AppDataSource.getRepository('Lead');
+  const courseRepo = AppDataSource.getRepository('Course');
+  
+  // Get all students and leads for this campaign
+  const allStudents = await studentRepo.find({ where: { campaignId } });
+  const allLeads = await leadRepo.find({ where: { campaignId } });
+  
+  // Filter by month
+  const monthStudents = allStudents.filter(s => {
+    const createdAt = new Date(s.createdAt);
+    return createdAt >= monthStart && createdAt <= monthEnd;
+  });
+  
+  const monthLeads = allLeads.filter(l => {
+    const createdAt = new Date(l.createdAt);
+    return createdAt >= monthStart && createdAt <= monthEnd;
+  });
+  
+  // Calculate revenue
+  let revenue = 0;
+  for (const student of monthStudents) {
+    if (student.courseId) {
+      const course = await courseRepo.findOne({ where: { id: student.courseId } });
+      if (course && course.price) {
+        revenue += Number(course.price);
+      }
+    }
+  }
+  
+  // Count new students
+  const newStudents = monthStudents.filter(s => s.newStudent === true).length;
+  
+  return {
+    revenue,
+    newStudentsCount: newStudents,
+    potentialStudentsCount: monthLeads.length
+  };
+}
+
+// Calculate previous month metrics for a campaign
+async function calculatePreviousMonthMetrics(campaignId) {
+  const now = new Date();
+  const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const prevMonthEnd = new Date(currentMonthStart.getTime() - 1);
+  const prevMonthStart = new Date(prevMonthEnd.getFullYear(), prevMonthEnd.getMonth(), 1);
+  
+  return await calculateMonthMetrics(campaignId, prevMonthStart, prevMonthEnd);
+}
+
+// Calculate metrics for multiple previous months
+async function calculateHistoricalMetrics(campaignId, monthsBack = 6) {
+  const now = new Date();
+  const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const historicalData = [];
+  
+  for (let i = 1; i <= monthsBack; i++) {
+    const monthEnd = new Date(currentMonthStart.getFullYear(), currentMonthStart.getMonth() - i + 1, 0);
+    const monthStart = new Date(monthEnd.getFullYear(), monthEnd.getMonth(), 1);
+    
+    const metrics = await calculateMonthMetrics(campaignId, monthStart, monthEnd);
+    
+    historicalData.push({
+      month: monthStart.toLocaleDateString('vi-VN', { month: 'short', year: 'numeric' }),
+      monthIndex: i,
+      ...metrics
+    });
+  }
+  
+  return historicalData.reverse(); // Oldest to newest
+}
+
+// Get featured campaigns (top campaigns by ROI)
+exports.getFeaturedCampaigns = async (req, res) => {
+  try {
+    const { limit = 5, status } = req.query;
+    const limitNum = Math.max(1, Math.min(Number(limit), 20)); // Max 20, min 1
+    
+    // Build query - get all campaigns first, then filter by status if provided
+    const repo = AppDataSource.getRepository('Campaign');
+    const qb = repo.createQueryBuilder('campaign');
+    
+    if (status) {
+      qb.andWhere('campaign.status = :status', { status });
+    }
+    
+    const campaigns = await qb.getMany();
+    
+    if (campaigns.length === 0) {
+      return res.json([]);
+    }
+    
+    // Enrich all campaigns to get ROI
+    const enrichedCampaigns = await Promise.all(campaigns.map(toEnrichedCampaign));
+    
+    // Add previous month comparison data and historical data
+    const campaignsWithComparison = await Promise.all(
+      enrichedCampaigns.map(async (campaign) => {
+        const prevMetrics = await calculatePreviousMonthMetrics(campaign.id);
+        const historicalMetrics = await calculateHistoricalMetrics(campaign.id, 6); // Last 6 months
+        
+        // Calculate current month metrics
+        const now = new Date();
+        const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        
+        const currentMetrics = await calculateMonthMetrics(campaign.id, currentMonthStart, currentMonthEnd);
+        
+        // Calculate percentage changes
+        const revenueChange = prevMetrics.revenue > 0 
+          ? ((currentMetrics.revenue - prevMetrics.revenue) / prevMetrics.revenue * 100)
+          : currentMetrics.revenue > 0 ? 100 : 0;
+        
+        const newStudentsChange = prevMetrics.newStudentsCount > 0
+          ? ((currentMetrics.newStudentsCount - prevMetrics.newStudentsCount) / prevMetrics.newStudentsCount * 100)
+          : currentMetrics.newStudentsCount > 0 ? 100 : 0;
+        
+        const prevROI = prevMetrics.revenue > 0 && campaign.cost > 0
+          ? calculateROI(prevMetrics.revenue, campaign.cost)
+          : null;
+        const roiChange = campaign.roi && prevROI !== null
+          ? campaign.roi - prevROI
+          : null;
+        
+        return {
+          ...campaign,
+          previousMonth: {
+            revenue: prevMetrics.revenue,
+            newStudentsCount: prevMetrics.newStudentsCount,
+            potentialStudentsCount: prevMetrics.potentialStudentsCount
+          },
+          currentMonth: {
+            revenue: currentMetrics.revenue,
+            newStudentsCount: currentMetrics.newStudentsCount,
+            potentialStudentsCount: currentMetrics.potentialStudentsCount
+          },
+          changes: {
+            revenue: parseFloat(revenueChange.toFixed(1)),
+            newStudents: parseFloat(newStudentsChange.toFixed(1)),
+            roi: roiChange ? parseFloat(roiChange.toFixed(2)) : null
+          },
+          historical: historicalMetrics // Last 6 months of data
+        };
+      })
+    );
+    
+    // Sort by ROI (descending), fallback to revenue if ROI is null
+    const sortedCampaigns = campaignsWithComparison
+      .sort((a, b) => {
+        const roiA = (a.roi !== null && a.roi !== undefined && !isNaN(Number(a.roi))) ? Number(a.roi) : -Infinity;
+        const roiB = (b.roi !== null && b.roi !== undefined && !isNaN(Number(b.roi))) ? Number(b.roi) : -Infinity;
+        
+        // If both have ROI, sort by ROI
+        if (roiA !== -Infinity && roiB !== -Infinity) {
+          return roiB - roiA;
+        }
+        
+        // If only one has ROI, prioritize it
+        if (roiA !== -Infinity) return -1;
+        if (roiB !== -Infinity) return 1;
+        
+        // If neither has ROI, sort by revenue
+        const revenueA = Number(a.revenue) || 0;
+        const revenueB = Number(b.revenue) || 0;
+        return revenueB - revenueA;
+      })
+      .slice(0, limitNum);
+    
+    res.json(sortedCampaigns);
+  } catch (error) {
+    console.error('Error getting featured campaigns:', error);
+    res.status(500).json({ error: 'Failed to get featured campaigns', message: error.message });
+  }
 };
 
 exports.getById = async (req, res) => {

@@ -4,25 +4,40 @@ async function toEnrichedStudent(s) {
   const campaignRepo = AppDataSource.getRepository('Campaign');
   const channelRepo = AppDataSource.getRepository('Channel');
   const staffRepo = AppDataSource.getRepository('Staff');
+  const courseRepo = AppDataSource.getRepository('Course');
+  
   const campaign = s.campaignId ? await campaignRepo.findOne({ where: { id: s.campaignId } }) : null;
   const channel = s.channelId ? await channelRepo.findOne({ where: { id: s.channelId } }) : null;
   const staff = s.assignedStaffId ? await staffRepo.findOne({ where: { id: s.assignedStaffId } }) : null;
+  const course = s.courseId ? await courseRepo.findOne({ where: { id: s.courseId } }) : null;
+  
   return {
     ...s,
     campaignName: campaign ? campaign.name : null,
     channelName: channel ? channel.name : null,
-    assignedStaffName: staff ? staff.name : null
+    assignedStaffName: staff ? staff.name : null,
+    courseName: course ? course.name : null,
+    tuitionFee: course ? Number(course.price) : null,
+    enrollmentDate: s.createdAt // Use createdAt as enrollment date
   };
 }
 
 function buildQueryBuilder(query) {
-  const { search, status, enrollmentStatus, campaignId, channelId, assignedStaffId, newStudent } = query;
+  const { search, status, enrollmentStatus, campaignId, channelId, assignedStaffId, newStudent, campaignName } = query;
   const repo = AppDataSource.getRepository('Student');
   const qb = repo.createQueryBuilder('student');
   
   if (search) {
     const q = String(search).toLowerCase();
     qb.andWhere('(LOWER(student.fullName) LIKE :q OR LOWER(student.email) LIKE :q OR LOWER(student.phone) LIKE :q)', { q: `%${q}%` });
+  }
+  
+  // Tìm kiếm theo tên chiến dịch
+  if (campaignName) {
+    const campaignRepo = AppDataSource.getRepository('Campaign');
+    qb.innerJoin('campaigns', 'camp', 'camp.id = student.campaignId');
+    const q = String(campaignName).toLowerCase();
+    qb.andWhere('LOWER(camp.name) LIKE :campaignName', { campaignName: `%${q}%` });
   }
   
   if (status) {
@@ -100,11 +115,24 @@ exports.getStudents = async (req, res) => {
 
 exports.getStudentSummary = async (req, res) => {
   const qb = buildQueryBuilder(req.query);
+  
+  // Apply time filter if provided
+  const { startDate, endDate } = req.query;
+  if (startDate || endDate) {
+    if (startDate) {
+      qb.andWhere('student.createdAt >= :startDate', { startDate: new Date(startDate) });
+    }
+    if (endDate) {
+      qb.andWhere('student.createdAt <= :endDate', { endDate: new Date(endDate) });
+    }
+  }
+  
   const items = await qb.getMany();
   const total = items.length;
   const byStatus = {};
   const byEnrollment = {};
   const byCampaign = {};
+  let newStudentsCount = 0;
   
   for (const s of items) {
     const st = s.status || 'active';
@@ -114,8 +142,41 @@ exports.getStudentSummary = async (req, res) => {
     const camp = s.campaignId ? await AppDataSource.getRepository('Campaign').findOne({ where: { id: s.campaignId } }) : null;
     const campName = camp ? camp.name : 'Unknown';
     byCampaign[campName] = (byCampaign[campName] || 0) + 1;
+    
+    // Đếm học viên mới
+    if (s.newStudent === true) {
+      newStudentsCount++;
+    }
   }
-  res.json({ total, byStatus, byEnrollment, byCampaign });
+  res.json({ total, newStudentsCount, byStatus, byEnrollment, byCampaign });
+};
+
+// Get recent enrollments (recent student registrations)
+exports.getRecentEnrollments = async (req, res) => {
+  try {
+    const { limit = 10 } = req.query;
+    const limitNum = Math.max(1, Math.min(Number(limit), 50)); // Max 50, min 1
+    
+    const repo = AppDataSource.getRepository('Student');
+    const qb = repo.createQueryBuilder('student');
+    
+    // Filter by enrolled status
+    qb.andWhere('student.enrollmentStatus = :enrollmentStatus', { enrollmentStatus: 'enrolled' });
+    
+    // Sort by createdAt descending (most recent first)
+    qb.orderBy('student.createdAt', 'DESC');
+    
+    // Limit results
+    qb.take(limitNum);
+    
+    const students = await qb.getMany();
+    const items = await Promise.all(students.map(toEnrichedStudent));
+    
+    res.json(items);
+  } catch (error) {
+    console.error('Error getting recent enrollments:', error);
+    res.status(500).json({ error: 'Failed to get recent enrollments', message: error.message });
+  }
 };
 
 exports.getStudentById = async (req, res) => {
