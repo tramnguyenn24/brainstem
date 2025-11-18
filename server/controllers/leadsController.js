@@ -210,10 +210,22 @@ exports.deleteLead = async (req, res) => {
 
 exports.convertLead = async (req, res) => {
   const id = Number(req.params.id);
+  const { courseId } = req.body || {};
+  
   const leadRepo = AppDataSource.getRepository('Lead');
   const studentRepo = AppDataSource.getRepository('Student');
   const existing = await leadRepo.findOne({ where: { id } });
   if (!existing) return res.status(404).json({ message: 'Lead not found' });
+  
+  // Validate courseId if provided
+  if (courseId) {
+    const courseRepo = AppDataSource.getRepository('Course');
+    const course = await courseRepo.findOne({ where: { id: Number(courseId) } });
+    if (!course) {
+      return res.status(400).json({ message: 'Khóa học không tồn tại' });
+    }
+  }
+  
   await leadRepo.update(id, { status: 'converted', updatedAt: new Date() });
   
   const student = {
@@ -224,6 +236,10 @@ exports.convertLead = async (req, res) => {
     campaignId: existing.campaignId,
     channelId: existing.channelId,
     assignedStaffId: existing.assignedStaffId,
+    courseId: courseId ? Number(courseId) : null,
+    enrollmentStatus: 'enrolled',
+    status: 'active',
+    newStudent: true,
     createdAt: new Date(),
     updatedAt: new Date()
   };

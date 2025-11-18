@@ -609,10 +609,25 @@ exports.update = async (req, res) => {
 };
 
 exports.remove = async (req, res) => {
-  const id = Number(req.params.id);
-  const repo = AppDataSource.getRepository('Campaign');
-  const existing = await repo.findOne({ where: { id } });
-  if (!existing) return res.status(404).json({ message: 'Campaign not found' });
-  await repo.remove(existing);
-  res.json(await toEnrichedCampaign(existing));
+  try {
+    const id = Number(req.params.id);
+    const repo = AppDataSource.getRepository('Campaign');
+    const existing = await repo.findOne({ where: { id } });
+    if (!existing) return res.status(404).json({ message: 'Campaign not found' });
+    
+    // Enrich campaign trước khi xóa để trả về thông tin đầy đủ
+    const enriched = await toEnrichedCampaign(existing);
+    
+    // Xóa campaign (campaign_channels sẽ tự động xóa do CASCADE)
+    await repo.remove(existing);
+    
+    // Trả về thông tin campaign đã xóa (không cần enrich lại vì đã enrich trước khi xóa)
+    res.json(enriched);
+  } catch (error) {
+    console.error('Error deleting campaign:', error);
+    res.status(500).json({ 
+      error: 'Failed to delete campaign', 
+      message: error.message 
+    });
+  }
 };

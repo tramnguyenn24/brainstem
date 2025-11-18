@@ -7,7 +7,6 @@ const Campaign = require('./entities/Campaign');
 const Lead = require('./entities/Lead');
 const Student = require('./entities/Student');
 const Form = require('./entities/Form');
-const Media = require('./entities/Media');
 const Course = require('./entities/Course');
 const CampaignChannel = require('./entities/CampaignChannel');
 
@@ -24,33 +23,13 @@ const AppDataSource = new DataSource({
   username: process.env.PGUSER,
   password: process.env.PGPASSWORD,
   ssl: isSslEnabled ? { rejectUnauthorized: false } : undefined,
-  entities: [Channel, Staff, Campaign, Lead, Student, Form, Media, Course, CampaignChannel],
+  entities: [Channel, Staff, Campaign, Lead, Student, Form, Course, CampaignChannel],
   synchronize: false,
   logging: false,
   migrations: ['db/migrations/*.js']
 });
 
 async function seedIfEmpty() {
-  // Create media table if it doesn't exist
-  try {
-    await AppDataSource.query(`
-      CREATE TABLE IF NOT EXISTS "media" (
-        "id" SERIAL PRIMARY KEY,
-        "name" text NOT NULL,
-        "type" text,
-        "url" text,
-        "description" text,
-        "file_size" numeric,
-        "mime_type" text,
-        "status" text DEFAULT 'active',
-        "created_at" timestamptz DEFAULT now(),
-        "updated_at" timestamptz DEFAULT now()
-      )
-    `);
-  } catch (err) {
-    console.log('Media table may already exist:', err.message);
-  }
-
   const channelRepo = AppDataSource.getRepository('Channel');
   const staffRepo = AppDataSource.getRepository('Staff');
   const campaignRepo = AppDataSource.getRepository('Campaign');

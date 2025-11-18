@@ -4,6 +4,8 @@ const ctrl = require('../controllers/channelsController');
 const router = express.Router();
 
 router.get('/', ctrl.getChannels);
+router.get('/with-stats', ctrl.getChannelsWithStats);
+router.get('/stats', ctrl.getChannelStats);
 router.get('/summary', ctrl.getSummary);
 router.get('/:id', ctrl.getById);
 router.get('/:id/campaigns', ctrl.getCampaigns);

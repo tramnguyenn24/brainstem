@@ -35,7 +35,6 @@ const staffRouter = require('./routes/staff');
 const studentsRouter = require('./routes/students');
 const formsRouter = require('./routes/forms');
 const statisticsRouter = require('./routes/statistics');
-const mediaRouter = require('./routes/media');
 const coursesRouter = require('./routes/courses');
 app.use('/api/users', usersRouter);
 app.use('/api/leads', leadsRouter);
@@ -45,7 +44,6 @@ app.use('/api/staff', staffRouter);
 app.use('/api/students', studentsRouter);
 app.use('/api/forms', formsRouter);
 app.use('/api/statistics', statisticsRouter);
-app.use('/api/media', mediaRouter);
 app.use('/api/courses', coursesRouter);
 
 app.get('/health', async (req, res) => {

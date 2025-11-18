@@ -114,41 +114,95 @@ exports.getStudents = async (req, res) => {
 };
 
 exports.getStudentSummary = async (req, res) => {
-  const qb = buildQueryBuilder(req.query);
+  // Tạo query builder riêng cho summary, không dùng buildQueryBuilder để tránh filter không mong muốn
+  const repo = AppDataSource.getRepository('Student');
   
-  // Apply time filter if provided
+  // Lấy tổng số học viên TẤT CẢ (không filter thời gian)
+  const allStudents = await repo.find();
+  const totalAll = allStudents.length;
+  let newStudentsCountAll = 0;
+  
+  // Đếm học viên mới trong tất cả học viên
+  for (const s of allStudents) {
+    if (s.newStudent === true) {
+      newStudentsCountAll++;
+    }
+  }
+  
+  // Query builder cho filter thời gian (nếu có)
+  const qb = repo.createQueryBuilder('student');
   const { startDate, endDate } = req.query;
+  
+  // Chỉ áp dụng filter thời gian nếu được cung cấp
   if (startDate || endDate) {
     if (startDate) {
       qb.andWhere('student.createdAt >= :startDate', { startDate: new Date(startDate) });
     }
     if (endDate) {
-      qb.andWhere('student.createdAt <= :endDate', { endDate: new Date(endDate) });
+      // Set time là 23:59:59 để bao gồm cả ngày cuối
+      const endDateObj = new Date(endDate);
+      endDateObj.setHours(23, 59, 59, 999);
+      qb.andWhere('student.createdAt <= :endDate', { endDate: endDateObj });
     }
-  }
-  
-  const items = await qb.getMany();
-  const total = items.length;
-  const byStatus = {};
-  const byEnrollment = {};
-  const byCampaign = {};
-  let newStudentsCount = 0;
-  
-  for (const s of items) {
-    const st = s.status || 'active';
-    byStatus[st] = (byStatus[st] || 0) + 1;
-    const en = s.enrollmentStatus || 'pending';
-    byEnrollment[en] = (byEnrollment[en] || 0) + 1;
-    const camp = s.campaignId ? await AppDataSource.getRepository('Campaign').findOne({ where: { id: s.campaignId } }) : null;
-    const campName = camp ? camp.name : 'Unknown';
-    byCampaign[campName] = (byCampaign[campName] || 0) + 1;
     
-    // Đếm học viên mới
-    if (s.newStudent === true) {
-      newStudentsCount++;
+    const items = await qb.getMany();
+    const total = items.length;
+    const byStatus = {};
+    const byEnrollment = {};
+    const byCampaign = {};
+    let newStudentsCount = 0;
+    
+    for (const s of items) {
+      const st = s.status || 'active';
+      byStatus[st] = (byStatus[st] || 0) + 1;
+      const en = s.enrollmentStatus || 'pending';
+      byEnrollment[en] = (byEnrollment[en] || 0) + 1;
+      const camp = s.campaignId ? await AppDataSource.getRepository('Campaign').findOne({ where: { id: s.campaignId } }) : null;
+      const campName = camp ? camp.name : 'Unknown';
+      byCampaign[campName] = (byCampaign[campName] || 0) + 1;
+      
+      // Đếm học viên mới trong khoảng thời gian
+      if (s.newStudent === true) {
+        newStudentsCount++;
+      }
     }
+    
+    // Trả về cả tổng số tất cả và tổng số trong khoảng thời gian
+    res.json({ 
+      total: total,                    // Tổng số trong khoảng thời gian
+      totalAll: totalAll,               // Tổng số tất cả học viên
+      newStudentsCount: newStudentsCount, // Số học viên mới trong khoảng thời gian
+      newStudentsCountAll: newStudentsCountAll, // Số học viên mới tất cả
+      byStatus, 
+      byEnrollment, 
+      byCampaign 
+    });
+  } else {
+    // Nếu không có filter thời gian, trả về tổng số tất cả
+    const byStatus = {};
+    const byEnrollment = {};
+    const byCampaign = {};
+    
+    for (const s of allStudents) {
+      const st = s.status || 'active';
+      byStatus[st] = (byStatus[st] || 0) + 1;
+      const en = s.enrollmentStatus || 'pending';
+      byEnrollment[en] = (byEnrollment[en] || 0) + 1;
+      const camp = s.campaignId ? await AppDataSource.getRepository('Campaign').findOne({ where: { id: s.campaignId } }) : null;
+      const campName = camp ? camp.name : 'Unknown';
+      byCampaign[campName] = (byCampaign[campName] || 0) + 1;
+    }
+    
+    res.json({ 
+      total: totalAll, 
+      totalAll: totalAll,
+      newStudentsCount: newStudentsCountAll,
+      newStudentsCountAll: newStudentsCountAll,
+      byStatus, 
+      byEnrollment, 
+      byCampaign 
+    });
   }
-  res.json({ total, newStudentsCount, byStatus, byEnrollment, byCampaign });
 };
 
 // Get recent enrollments (recent student registrations)

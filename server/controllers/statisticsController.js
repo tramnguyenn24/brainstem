@@ -61,16 +61,57 @@ exports.getRevenue = async (req, res) => {
       });
     }
     
-    // Calculate top courses by revenue (mock)
-    const topCourses = campaigns.slice(0, 5).map(c => ({
-      name: c.name,
-      revenue: Math.floor(Math.random() * 50000000) + 10000000 // Mock revenue
-    }));
+    // Calculate top campaigns by revenue
+    const campaignRevenueMap = new Map();
+    const courseRepo = AppDataSource.getRepository('Course');
+    
+    // Tính doanh thu cho mỗi campaign
+    for (const campaign of campaigns) {
+      let revenue = 0;
+      
+      // Ưu tiên dùng campaign.revenue nếu có
+      if (campaign.revenue) {
+        revenue = Number(campaign.revenue);
+      } else {
+        // Tính từ students trong campaign
+        // Lấy tất cả students của campaign (không filter thời gian để có tổng doanh thu chính xác)
+        const campaignStudents = students.filter(s => s.campaignId === campaign.id);
+        
+        for (const student of campaignStudents) {
+          // Nếu student có courseId, lấy giá từ course
+          if (student.courseId) {
+            const course = await courseRepo.findOne({ where: { id: student.courseId } });
+            if (course && course.price) {
+              revenue += Number(course.price) || 0;
+            }
+          }
+          // Hoặc dùng tuitionFee nếu có
+          if (student.tuitionFee) {
+            revenue += Number(student.tuitionFee) || 0;
+          }
+        }
+      }
+      
+      if (revenue > 0) {
+        campaignRevenueMap.set(campaign.id, {
+          name: campaign.name,
+          revenue: revenue
+        });
+      }
+    }
+    
+    // Sắp xếp và lấy top campaigns
+    const topCampaigns = Array.from(campaignRevenueMap.values())
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 5);
     
     // Calculate total revenue and orders
+    const totalRevenueFromCampaigns = Array.from(campaignRevenueMap.values())
+      .reduce((sum, item) => sum + item.revenue, 0);
+    
     const statisticTotal = {
       countOrder: filteredStudents.length,
-      countRevenue: revenueData.reduce((sum, item) => sum + item.revenue, 0)
+      countRevenue: totalRevenueFromCampaigns || revenueData.reduce((sum, item) => sum + item.revenue, 0)
     };
     
     res.json({
@@ -81,7 +122,10 @@ exports.getRevenue = async (req, res) => {
         totalCampaigns,
         totalPotentialStudents,
         revenueData,
-        topCourses
+        topCampaigns: topCampaigns.length > 0 ? topCampaigns : campaigns.slice(0, 5).map(c => ({
+          name: c.name,
+          revenue: 0
+        }))
       },
       statisticTotal
     });
@@ -188,6 +232,7 @@ exports.getDashboardStats = async (req, res) => {
     const campaignRepo = AppDataSource.getRepository('Campaign');
     const leadRepo = AppDataSource.getRepository('Lead');
     const channelRepo = AppDataSource.getRepository('Channel');
+    const courseRepo = AppDataSource.getRepository('Course');
     
     // Get all data
     const [allStudents, allCampaigns, allLeads] = await Promise.all([
@@ -228,44 +273,56 @@ exports.getDashboardStats = async (req, res) => {
       return createdAt >= prevMonthStart && createdAt <= prevMonthEnd;
     });
     
-    // Calculate total revenue (from all campaigns)
-    // Revenue should be calculated from campaign.revenue or from students' course prices
+    // Calculate total revenue from converted students (students with sourceLeadId and courseId)
+    // Chỉ tính doanh thu từ học viên được chuyển đổi từ leads và đã đăng ký khóa học
+    // Doanh thu được tính theo giá khóa học mà học viên đã đăng ký (course.price)
     let currentRevenue = 0;
-    for (const c of allCampaigns) {
-      // Use campaign.revenue if available
-      if (c.revenue) {
-        currentRevenue += Number(c.revenue);
+    const convertedStudents = currentStudents.filter(s => s.sourceLeadId != null && s.courseId != null);
+    
+    // Lấy tất cả courseIds cần thiết để query một lần (tối ưu performance)
+    const courseIds = [...new Set(convertedStudents.map(s => s.courseId).filter(id => id != null))];
+    let courses = [];
+    if (courseIds.length > 0) {
+      if (courseIds.length === 1) {
+        courses = await courseRepo.find({ where: { id: courseIds[0] } });
       } else {
-        // Calculate from students' course prices for this campaign
-        const campaignStudents = allStudents.filter(s => s.campaignId === c.id);
-        for (const student of campaignStudents) {
-          if (student.courseId) {
-            const course = await courseRepo.findOne({ where: { id: student.courseId } });
-            if (course && course.price) {
-              currentRevenue += Number(course.price);
-            }
-          }
+        const qb = courseRepo.createQueryBuilder('course');
+        courses = await qb.where('course.id IN (:...ids)', { ids: courseIds }).getMany();
+      }
+    }
+    const courseMap = new Map(courses.map(c => [c.id, c]));
+    
+    for (const student of convertedStudents) {
+      if (student.courseId) {
+        const course = courseMap.get(student.courseId);
+        if (course && course.price != null) {
+          currentRevenue += Number(course.price);
         }
       }
     }
     
-    // For previous month, calculate revenue from campaigns created in previous month
+    // For previous month, calculate revenue from converted students in previous month
     let prevRevenue = 0;
-    for (const c of allCampaigns) {
-      const createdAt = new Date(c.createdAt);
-      if (createdAt >= prevMonthStart && createdAt <= prevMonthEnd) {
-        if (c.revenue) {
-          prevRevenue += Number(c.revenue);
-        } else {
-          const campaignStudents = allStudents.filter(s => s.campaignId === c.id);
-          for (const student of campaignStudents) {
-            if (student.courseId) {
-              const course = await courseRepo.findOne({ where: { id: student.courseId } });
-              if (course && course.price) {
-                prevRevenue += Number(course.price);
-              }
-            }
-          }
+    const prevConvertedStudents = prevStudents.filter(s => s.sourceLeadId != null && s.courseId != null);
+    
+    // Lấy tất cả courseIds cần thiết cho previous month
+    const prevCourseIds = [...new Set(prevConvertedStudents.map(s => s.courseId).filter(id => id != null))];
+    let prevCourses = [];
+    if (prevCourseIds.length > 0) {
+      if (prevCourseIds.length === 1) {
+        prevCourses = await courseRepo.find({ where: { id: prevCourseIds[0] } });
+      } else {
+        const qb = courseRepo.createQueryBuilder('course');
+        prevCourses = await qb.where('course.id IN (:...ids)', { ids: prevCourseIds }).getMany();
+      }
+    }
+    const prevCourseMap = new Map(prevCourses.map(c => [c.id, c]));
+    
+    for (const student of prevConvertedStudents) {
+      if (student.courseId) {
+        const course = prevCourseMap.get(student.courseId);
+        if (course && course.price != null) {
+          prevRevenue += Number(course.price);
         }
       }
     }
@@ -425,7 +482,11 @@ exports.getDashboardStats = async (req, res) => {
         totalRevenue: {
           value: currentRevenue,
           change: parseFloat(revenueChange),
-          formatted: `${(currentRevenue / 1000000000).toFixed(1)} Tr`
+          formatted: new Intl.NumberFormat('vi-VN', {
+            style: 'currency',
+            currency: 'VND',
+            maximumFractionDigits: 0
+          }).format(currentRevenue)
         },
         registeredStudents: {
           value: currentRegistered,

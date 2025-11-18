@@ -70,17 +70,4 @@ create table if not exists forms (
   updated_at timestamptz default now()
 );
 
-create table if not exists media (
-  id serial primary key,
-  name text not null,
-  type text,
-  url text,
-  description text,
-  file_size numeric,
-  mime_type text,
-  status text default 'active',
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
-);
-
 

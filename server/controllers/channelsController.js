@@ -186,4 +186,157 @@ exports.delete = async (req, res) => {
   }
 };
 
+// Get channel statistics (students, leads, revenue)
+exports.getChannelStats = async (req, res) => {
+  try {
+    const repo = AppDataSource.getRepository('Channel');
+    const studentRepo = AppDataSource.getRepository('Student');
+    const leadRepo = AppDataSource.getRepository('Lead');
+    const courseRepo = AppDataSource.getRepository('Course');
+    
+    const channels = await repo.find();
+    
+    const stats = await Promise.all(channels.map(async (channel) => {
+      // Đếm số học viên từ channel này
+      const students = await studentRepo.find({ where: { channelId: channel.id } });
+      const studentsCount = students.length;
+      
+      // Đếm số học viên mới
+      const newStudents = students.filter(s => s.newStudent === true);
+      const newStudentsCount = newStudents.length;
+      
+      // Đếm số leads từ channel này
+      const leads = await leadRepo.find({ where: { channelId: channel.id } });
+      const leadsCount = leads.length;
+      
+      // Tính doanh thu từ channel này
+      let revenue = 0;
+      for (const student of students) {
+        if (student.courseId) {
+          const course = await courseRepo.findOne({ where: { id: student.courseId } });
+          if (course && course.price) {
+            revenue += Number(course.price);
+          }
+        }
+      }
+      
+      // Đếm số chiến dịch sử dụng channel này
+      const campaignChannelRepo = AppDataSource.getRepository('CampaignChannel');
+      const campaignChannels = await campaignChannelRepo.find({ where: { channelId: channel.id } });
+      const campaignsCount = campaignChannels.length;
+      
+      return {
+        channelId: channel.id,
+        channelName: channel.name,
+        studentsCount,
+        newStudentsCount,
+        leadsCount,
+        revenue,
+        campaignsCount,
+        status: channel.status
+      };
+    }));
+    
+    res.json(stats);
+  } catch (error) {
+    console.error('Error getting channel stats:', error);
+    res.status(500).json({ message: 'Không thể lấy thống kê kênh', error: error.message });
+  }
+};
+
+// Get enriched channels with statistics
+exports.getChannelsWithStats = async (req, res) => {
+  try {
+    const { page = 1, size = 10, sortBy, sortDirection } = req.query;
+    const pageNum = Math.max(1, Number(page));
+    const pageSize = Math.max(1, Number(size));
+    
+    const repo = AppDataSource.getRepository('Channel');
+    const studentRepo = AppDataSource.getRepository('Student');
+    const leadRepo = AppDataSource.getRepository('Lead');
+    const courseRepo = AppDataSource.getRepository('Course');
+    const campaignChannelRepo = AppDataSource.getRepository('CampaignChannel');
+    
+    let list = await repo.find();
+    list = applyFilters(list, req.query);
+    const totalItems = list.length;
+    list = sortItems(list, sortBy, sortDirection);
+    
+    // Enrich channels with statistics
+    const campaignRepo = AppDataSource.getRepository('Campaign');
+    const enrichedChannels = await Promise.all(list.map(async (channel) => {
+      const students = await studentRepo.find({ where: { channelId: channel.id } });
+      const studentsCount = students.length;
+      const newStudentsCount = students.filter(s => s.newStudent === true).length;
+      const leadsCount = (await leadRepo.find({ where: { channelId: channel.id } })).length;
+      
+      // Tính tỷ lệ chuyển đổi (leads → học viên)
+      const conversionRate = leadsCount > 0 ? ((studentsCount / leadsCount) * 100).toFixed(2) : 0;
+      
+      let revenue = 0;
+      for (const student of students) {
+        if (student.courseId) {
+          const course = await courseRepo.findOne({ where: { id: student.courseId } });
+          if (course && course.price) {
+            revenue += Number(course.price);
+          }
+        }
+      }
+      
+      // Lấy campaigns đang chạy của channel
+      // Tìm qua CampaignChannel (nhiều kênh cho 1 campaign)
+      const campaignChannels = await campaignChannelRepo.find({ where: { channelId: channel.id } });
+      const campaignIdsFromChannel = campaignChannels.map(cc => cc.campaignId);
+      
+      // Tìm campaigns có channelId trực tiếp (backward compatibility)
+      const directCampaigns = await campaignRepo.find({ where: { channelId: channel.id, status: 'running' } });
+      const directCampaignIds = directCampaigns.map(c => c.id);
+      
+      // Lấy campaigns từ CampaignChannel có status = 'running'
+      const allCampaignIds = [...new Set([...campaignIdsFromChannel, ...directCampaignIds])];
+      let runningCampaigns = [];
+      if (allCampaignIds.length > 0) {
+        const qb = campaignRepo.createQueryBuilder('campaign');
+        qb.where('campaign.id IN (:...ids)', { ids: allCampaignIds });
+        qb.andWhere('campaign.status = :status', { status: 'running' });
+        runningCampaigns = await qb.getMany();
+      }
+      
+      const runningCampaignsCount = runningCampaigns.length;
+      const campaignsCount = (await campaignChannelRepo.find({ where: { channelId: channel.id } })).length;
+      
+      return {
+        ...channel,
+        studentsCount,
+        newStudentsCount,
+        leadsCount,
+        revenue,
+        campaignsCount,
+        runningCampaigns: runningCampaigns.map(c => ({
+          id: c.id,
+          name: c.name,
+          status: c.status
+        })),
+        runningCampaignsCount,
+        conversionRate: Number(conversionRate)
+      };
+    }));
+    
+    // Apply pagination
+    const start = (pageNum - 1) * pageSize;
+    const items = enrichedChannels.slice(start, start + pageSize);
+    
+    res.json({ 
+      page: pageNum, 
+      size: pageSize, 
+      totalItems, 
+      totalPages: Math.ceil(totalItems / pageSize), 
+      items 
+    });
+  } catch (error) {
+    console.error('Error getting channels with stats:', error);
+    res.status(500).json({ message: 'Không thể lấy danh sách kênh', error: error.message });
+  }
+};
+
 

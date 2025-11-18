@@ -1,7 +1,13 @@
-module.exports = class AddMedia1700000000001 {
-  name = 'AddMedia1700000000001'
+module.exports = class RemoveMedia1700000000003 {
+  name = 'RemoveMedia1700000000003'
 
   async up(queryRunner) {
+    // Drop media table if it exists
+    await queryRunner.query(`DROP TABLE IF EXISTS "media" CASCADE`);
+  }
+
+  async down(queryRunner) {
+    // Recreate media table if needed to rollback
     await queryRunner.query(`CREATE TABLE IF NOT EXISTS "media" (
       "id" SERIAL PRIMARY KEY,
       "name" text NOT NULL,
@@ -14,10 +20,6 @@ module.exports = class AddMedia1700000000001 {
       "created_at" timestamptz DEFAULT now(),
       "updated_at" timestamptz DEFAULT now()
     )`);
-  }
-
-  async down(queryRunner) {
-    await queryRunner.query(`DROP TABLE IF EXISTS "media"`);
   }
 }
 
