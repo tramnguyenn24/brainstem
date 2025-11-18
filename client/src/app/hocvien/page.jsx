@@ -22,6 +22,7 @@ const getErrorMessage = (error, defaultMessage) => {
 const Page = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
+  const [campaignNameSearch, setCampaignNameSearch] = useState("");
   const [students, setStudents] = useState([]);
   const [metadata, setMetadata] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -42,6 +43,17 @@ const Page = () => {
   const [showViewModal, setShowViewModal] = useState(false);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   
+  // Statistics state
+  const [statistics, setStatistics] = useState({
+    total: 0,
+    newStudentsCount: 0
+  });
+  const [statisticsLoading, setStatisticsLoading] = useState(false);
+  const [dateRange, setDateRange] = useState({
+    startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    endDate: new Date().toISOString().split('T')[0]
+  });
+  
   // Lấy tham số từ URL
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -53,17 +65,25 @@ const Page = () => {
   // Lấy các tham số lọc từ URL
   const searchFilter = searchParams.get("search") || "";
   const statusFilter = searchParams.get("status") || "";
+  const campaignNameFilter = searchParams.get("campaignName") || "";
 
   // Sync state với URL parameters
   useEffect(() => {
     setSearchTerm(searchFilter);
     setSelectedStatus(statusFilter);
-  }, [searchFilter, statusFilter]);
+    setCampaignNameSearch(campaignNameFilter);
+  }, [searchFilter, statusFilter, campaignNameFilter]);
 
   // Effect khi trang hoặc bộ lọc thay đổi, gọi API để lấy dữ liệu
   useEffect(() => {
-    fetchStudents(currentPage, itemsPerPage, searchFilter, statusFilter);
-  }, [currentPage, itemsPerPage, searchFilter, statusFilter]);
+    fetchStudents(currentPage, itemsPerPage, searchFilter, statusFilter, campaignNameFilter);
+  }, [currentPage, itemsPerPage, searchFilter, statusFilter, campaignNameFilter]);
+
+  // Fetch statistics on mount and when date range changes
+  useEffect(() => {
+    fetchStatistics();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dateRange]);
 
   useEffect(() => {
     const timerId = setTimeout(() => {
@@ -77,6 +97,19 @@ const Page = () => {
       clearTimeout(timerId);
     };
   }, [searchTerm, searchFilter]);
+
+  useEffect(() => {
+    const timerId = setTimeout(() => {
+      if (campaignNameSearch !== campaignNameFilter) {
+        // Cập nhật URL với từ khóa tìm kiếm chiến dịch
+        updateFilters({ campaignName: campaignNameSearch });
+      }
+    }, 500);
+
+    return () => {
+      clearTimeout(timerId);
+    };
+  }, [campaignNameSearch, campaignNameFilter]);
 
   // Cập nhật bộ lọc vào URL và quay về trang đầu tiên
   const updateFilters = (newFilters) => {
@@ -98,7 +131,32 @@ const Page = () => {
     replace(`${pathname}?${params}`);
   };
 
-  const fetchStudents = async (page, size, search = "", status = "") => {
+  const fetchStatistics = async () => {
+    try {
+      setStatisticsLoading(true);
+      const response = await studentService.getStudentSummary({
+        startDate: dateRange.startDate,
+        endDate: dateRange.endDate
+      });
+      
+      if (response && (response.code >= 400 || response.error || response.status >= 400)) {
+        console.error("Error fetching statistics:", response);
+        return;
+      }
+      
+      // Ưu tiên dùng totalAll nếu có (tổng số tất cả học viên), nếu không thì dùng total (trong khoảng thời gian)
+      setStatistics({
+        total: response?.totalAll || response?.total || 0,
+        newStudentsCount: response?.newStudentsCountAll || response?.newStudentsCount || 0
+      });
+    } catch (err) {
+      console.error("Error fetching statistics:", err);
+    } finally {
+      setStatisticsLoading(false);
+    }
+  };
+
+  const fetchStudents = async (page, size, search = "", status = "", campaignName = "") => {
     try {
       setLoading(true);
       const response = await studentService.getStudents({ 
@@ -106,6 +164,7 @@ const Page = () => {
         size, 
         search, 
         status,
+        campaignName,
         sortBy: 'createdAt',
         sortDirection: 'desc'
       });
@@ -172,9 +231,20 @@ const Page = () => {
     setSearchTerm(value);
   };
 
+  const handleCampaignNameSearch = (value) => {
+    setCampaignNameSearch(value);
+  };
+
   const handleStatusChange = (status) => {
     setSelectedStatus(status);
     updateFilters({ status });
+  };
+
+  const handleDateRangeChange = (field, value) => {
+    setDateRange(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
   const handleEdit = (student) => {
@@ -256,7 +326,8 @@ const Page = () => {
       });
       
       setShowEditModal(false);
-      fetchStudents(currentPage, itemsPerPage, searchFilter, statusFilter);
+      fetchStudents(currentPage, itemsPerPage, searchFilter, statusFilter, campaignNameFilter);
+      fetchStatistics();
     } catch (err) {
       console.error("Error updating student:", err);
       const errorMessage = getErrorMessage(err, "Không thể cập nhật học viên. Vui lòng thử lại!");
@@ -297,7 +368,8 @@ const Page = () => {
       });
       
       setShowDeleteModal(false);
-      fetchStudents(currentPage, itemsPerPage, searchFilter, statusFilter);
+      fetchStudents(currentPage, itemsPerPage, searchFilter, statusFilter, campaignNameFilter);
+      fetchStatistics();
     } catch (err) {
       console.error("Error deleting student:", err);
       const errorMessage = getErrorMessage(err, "Không thể xóa học viên. Vui lòng thử lại!");
@@ -341,6 +413,53 @@ const Page = () => {
     <div className={Style.userr}>
       
       <div className={Style.container}>
+        {/* Statistics Cards */}
+        <div className={Style.statisticsSection}>
+          <div className={Style.statisticsHeader}>
+            <h2>Thống kê nhanh</h2>
+            <div className={Style.dateFilter}>
+              <div className={Style.dateGroup}>
+                <label>Từ ngày:</label>
+                <input
+                  type="date"
+                  value={dateRange.startDate}
+                  onChange={(e) => handleDateRangeChange('startDate', e.target.value)}
+                  className={Style.dateInput}
+                />
+              </div>
+              <div className={Style.dateGroup}>
+                <label>Đến ngày:</label>
+                <input
+                  type="date"
+                  value={dateRange.endDate}
+                  onChange={(e) => handleDateRangeChange('endDate', e.target.value)}
+                  className={Style.dateInput}
+                />
+              </div>
+            </div>
+          </div>
+          <div className={Style.statisticsCards}>
+            <div className={Style.statCard}>
+              <div className={Style.statCardIcon}>👥</div>
+              <div className={Style.statCardContent}>
+                <h3>Tổng số học viên</h3>
+                <p className={Style.statCardValue}>
+                  {statisticsLoading ? '...' : statistics.total.toLocaleString('vi-VN')}
+                </p>
+              </div>
+            </div>
+            <div className={Style.statCard}>
+              <div className={Style.statCardIcon}>🆕</div>
+              <div className={Style.statCardContent}>
+                <h3>Số học viên mới</h3>
+                <p className={Style.statCardValue}>
+                  {statisticsLoading ? '...' : statistics.newStudentsCount.toLocaleString('vi-VN')}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className={Style.top}>
             <Suspense fallback={<div>Đang tải...</div>}>
                 <FilterableSearch 
@@ -357,16 +476,31 @@ const Page = () => {
                   ]}
               />
             </Suspense>
+            <div className={Style.searchGroup}>
+              <Suspense fallback={<div>Đang tải...</div>}>
+                <FilterableSearch 
+                  placeholder="Tìm kiếm theo tên chiến dịch (CD)..."
+                  onChange={handleCampaignNameSearch} 
+                  onSearch={handleCampaignNameSearch} 
+                  value={campaignNameSearch}
+                />
+              </Suspense>
+            </div>
             <Link href="/hocvien/add">
               <button className={Style.addButton}>Thêm mới</button>
             </Link>
         </div>
       
         {/* Hiển thị kết quả tìm kiếm */}
-        {searchFilter && (
+        {(searchFilter || campaignNameFilter) && (
           <div className={Style.searchInfo}>
-            Kết quả tìm kiếm cho: <strong>{searchFilter}</strong> | 
-            Tìm thấy: <strong>{students.length}</strong> học viên
+            {searchFilter && (
+              <span>Kết quả tìm kiếm: <strong>{searchFilter}</strong></span>
+            )}
+            {campaignNameFilter && (
+              <span>{searchFilter ? ' | ' : ''}Tên CD: <strong>{campaignNameFilter}</strong></span>
+            )}
+            <span> | Tìm thấy: <strong>{students.length}</strong> học viên</span>
             {statusFilter && (
               <span> | Trạng thái: <strong>{statusFilter}</strong></span>
             )}

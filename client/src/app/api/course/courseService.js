@@ -8,7 +8,7 @@ const buildQueryString = (options = {}) => {
     page = 1,
     size = 10,
     search = '',
-    type,
+    name = '',
     status,
     sortBy = 'createdAt',
     sortDirection = 'desc'
@@ -19,7 +19,7 @@ const buildQueryString = (options = {}) => {
   params.append('size', size.toString());
   
   if (search) params.append('search', search);
-  if (type) params.append('type', type);
+  if (name) params.append('name', name);
   if (status) params.append('status', status);
   if (sortBy) params.append('sortBy', sortBy);
   if (sortDirection) params.append('sortDirection', sortDirection);
@@ -27,86 +27,71 @@ const buildQueryString = (options = {}) => {
   return params.toString();
 };
 
-export const mediaService = {
-  getMedia: async (options = {}) => {
+export const courseService = {
+  getCourses: async (options = {}) => {
     try {
       const queryString = buildQueryString(options);
-      const { data } = await apiRequest(`${API_BASE_URL}/api/media?${queryString}`, {
+      const { data } = await apiRequest(`${API_BASE_URL}/api/courses?${queryString}`, {
         method: 'GET'
       });
       return data;
     } catch (error) {
-      console.error('Error fetching media:', error);
+      console.error('Error fetching courses:', error);
       throw error;
     }
   },
 
-  getMediaSummary: async () => {
+  getCourseById: async id => {
     try {
-      const { data } = await apiRequest(`${API_BASE_URL}/api/media/summary`, {
+      const { data } = await apiRequest(`${API_BASE_URL}/api/courses/${id}`, {
         method: 'GET'
       });
       return data;
     } catch (error) {
-      console.error('Error fetching media summary:', error);
+      console.error('Error fetching course:', error);
       throw error;
     }
   },
 
-  getMediaById: async id => {
+  addCourse: async course => {
     try {
-      const { data } = await apiRequest(`${API_BASE_URL}/api/media/${id}`, {
-        method: 'GET'
-      });
-      return data;
-    } catch (error) {
-      console.error('Error fetching media:', error);
-      throw error;
-    }
-  },
-
-  addMedia: async media => {
-    try {
-      const { data } = await apiRequest(`${API_BASE_URL}/api/media`, {
+      const { data } = await apiRequest(`${API_BASE_URL}/api/courses`, {
         method: 'POST',
         body: JSON.stringify({
-          name: media.name,
-          type: media.type,
-          url: media.url,
-          description: media.description,
-          fileSize: media.fileSize,
-          mimeType: media.mimeType,
-          status: media.status || 'active'
+          name: course.name,
+          description: course.description,
+          price: course.price,
+          status: course.status
         })
       });
       return data;
     } catch (error) {
-      console.error('Error creating media:', error);
+      console.error('Error creating course:', error);
       throw error;
     }
   },
 
-  updateMedia: async (id, updates) => {
+  updateCourse: async (id, updates) => {
     try {
-      const { data } = await apiRequest(`${API_BASE_URL}/api/media/${id}`, {
+      const { data } = await apiRequest(`${API_BASE_URL}/api/courses/${id}`, {
         method: 'PUT',
         body: JSON.stringify(updates)
       });
       return data;
     } catch (error) {
-      console.error('Error updating media:', error);
+      console.error('Error updating course:', error);
       throw error;
     }
   },
 
-  deleteMedia: async id => {
+  deleteCourse: async id => {
     try {
-      const { data } = await apiRequest(`${API_BASE_URL}/api/media/${id}`, {
+      const { data } = await apiRequest(`${API_BASE_URL}/api/courses/${id}`, {
         method: 'DELETE'
       });
       return data;
     } catch (error) {
-      console.error('Error deleting media:', error);
+      console.error('Error deleting course:', error);
       throw error;
     }
   }

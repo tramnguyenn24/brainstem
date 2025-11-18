@@ -271,7 +271,32 @@
 .topRight {
   display: flex;
   align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+  flex: 1;
+  justify-content: flex-end;
+}
+
+.searchGroup {
+  flex: 1;
+  min-width: 250px;
+  max-width: 400px;
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.top h1 {
+  margin: 0;
+  font-size: 24px;
+  color: var(--text);
+  white-space: nowrap;
 }
 
 /* Search styles */

@@ -196,15 +196,6 @@ const RevenuePage = () => {
         </div>
 
         <div className={styles.card}>
-          <div className={styles.cardIcon}>👨‍🏫</div>
-          <div className={styles.cardContent}>
-            <h3>Giáo viên</h3>
-            <p className={styles.cardNumber}>{statistics?.data?.totalTeachers || 0}</p>
-            <span className={styles.cardSubtext}>Tổng số giáo viên</span>
-          </div>
-        </div>
-
-        <div className={styles.card}>
           <div className={styles.cardIcon}>📚</div>
           <div className={styles.cardContent}>
             <h3>Khóa học</h3>
@@ -244,6 +235,9 @@ const RevenuePage = () => {
           <div className={styles.cardIcon}>💰</div>
           <div className={styles.cardContent}>
             <h3>Tổng doanh thu</h3>
+            <p style={{fontSize: '0.875rem', color: '#8391a2', marginTop: '8px'}}>
+              (Tính từ tất cả học viên đã đăng ký khóa học)
+            </p>
             <p className={styles.cardNumber}>
               {new Intl.NumberFormat('vi-VN', {
                 style: 'currency',
@@ -257,23 +251,17 @@ const RevenuePage = () => {
 
       {/* Charts */}
       <div className={styles.chartsContainer}>
-        {/* Biểu đồ Pie - Phân bổ Doanh thu theo Khóa học */}
+        {/* Biểu đồ Pie - Phân bổ Doanh thu theo Chiến dịch */}
         <div className={styles.chartCard}>
-          <h2>Biểu đồ Tròn - Phân bổ Doanh thu theo Khóa học</h2>
+          <h2>Biểu đồ Tròn - Phân bổ Doanh thu theo Chiến dịch</h2>
           <div className={styles.rechartsContainer}>
             <ResponsiveContainer width="100%" height={400}>
               <PieChart>
                 <Pie
-                  data={statistics?.data?.topCourses?.map(course => ({
-                    name: course.name,
-                    value: course.revenue
-                  })) || [
-                    { name: 'IELTS', value: 45000000 },
-                    { name: 'TOEIC', value: 35000000 },
-                    { name: 'Speaking Club', value: 25000000 },
-                    { name: 'Grammar', value: 20000000 },
-                    { name: 'Business English', value: 15000000 }
-                  ]}
+                  data={statistics?.data?.topCampaigns?.filter(c => c.revenue > 0).map(campaign => ({
+                    name: campaign.name,
+                    value: campaign.revenue
+                  })) || []}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
@@ -282,13 +270,7 @@ const RevenuePage = () => {
                   fill="#8884d8"
                   dataKey="value"
                 >
-                  {(statistics?.data?.topCourses || [
-                    { name: 'IELTS', value: 45000000 },
-                    { name: 'TOEIC', value: 35000000 },
-                    { name: 'Speaking Club', value: 25000000 },
-                    { name: 'Grammar', value: 20000000 },
-                    { name: 'Business English', value: 15000000 }
-                  ]).map((entry, index) => (
+                  {(statistics?.data?.topCampaigns?.filter(c => c.revenue > 0) || []).map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'][index % 5]} />
                   ))}
                 </Pie>

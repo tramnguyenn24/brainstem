@@ -1,7 +1,7 @@
 .container {
-    padding: 20px;
+    padding: 24px;
     background-color: var(--bgSoft);
-    border-radius: 10px;
+    border-radius: 12px;
     margin-top: 20px;
 }
 
@@ -9,143 +9,182 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.top h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .table {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
     margin-top: 20px;
+    background: var(--bg);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.table td {
-    padding: 12px;
-    border-bottom: 1px solid #ccc;
-    color: var(--text);
-    vertical-align: top;
+.table thead {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
 .table thead td {
-    font-weight: bold;
-    background-color: #333;
+    padding: 16px 14px;
+    font-weight: 600;
     color: white;
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.table tbody tr {
+    transition: all 0.2s ease;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.table tbody tr:hover {
+    background-color: rgba(102, 126, 234, 0.05);
+    transform: translateX(2px);
+}
+
+.table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.table td {
+    padding: 14px;
+    color: var(--text);
+    vertical-align: middle;
+    font-size: 14px;
+}
+
+.orderName {
+    font-weight: 600;
+    color: var(--text);
+    max-width: 200px;
 }
 
 .status {
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 11px;
     text-transform: uppercase;
-    font-weight: bold;
+    font-weight: 600;
     display: inline-block;
+    letter-spacing: 0.5px;
+    transition: all 0.2s ease;
+}
+
+.status:hover {
+    transform: scale(1.05);
 }
 
 /* Status color classes */
 .statusCompleted {
-    background-color: rgba(0, 128, 0, 0.1);
-    color: green;
-    border: 1px solid green;
+    background: linear-gradient(135deg, rgba(10, 207, 151, 0.2) 0%, rgba(10, 207, 151, 0.1) 100%);
+    color: #0acf97;
+    border: 1px solid rgba(10, 207, 151, 0.3);
 }
 
 .statusPaid {
-    background-color: rgba(0, 100, 200, 0.1);
-    color: #0064c8;
-    border: 1px solid #0064c8;
+    background: linear-gradient(135deg, rgba(0, 123, 255, 0.2) 0%, rgba(0, 123, 255, 0.1) 100%);
+    color: #007bff;
+    border: 1px solid rgba(0, 123, 255, 0.3);
 }
 
 .statusHold {
-    background-color: rgba(255, 165, 0, 0.1);
-    color: #ff8c00;
-    border: 1px solid #ff8c00;
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.2) 0%, rgba(255, 193, 7, 0.1) 100%);
+    color: #ffc107;
+    border: 1px solid rgba(255, 193, 7, 0.3);
 }
 
 .statusPending {
-    background-color: rgba(255, 193, 7, 0.1);
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.2) 0%, rgba(255, 193, 7, 0.1) 100%);
     color: #ffc107;
-    border: 1px solid #ffc107;
+    border: 1px solid rgba(255, 193, 7, 0.3);
 }
 
 .statusCancelled {
-    background-color: rgba(255, 0, 0, 0.1);
-    color: red;
-    border: 1px solid red;
+    background: linear-gradient(135deg, rgba(220, 53, 69, 0.2) 0%, rgba(220, 53, 69, 0.1) 100%);
+    color: #dc3545;
+    border: 1px solid rgba(220, 53, 69, 0.3);
 }
 
 .statusFailed {
-    background-color: rgba(220, 53, 69, 0.1);
+    background: linear-gradient(135deg, rgba(220, 53, 69, 0.2) 0%, rgba(220, 53, 69, 0.1) 100%);
     color: #dc3545;
-    border: 1px solid #dc3545;
+    border: 1px solid rgba(220, 53, 69, 0.3);
 }
 
 .statusDefault {
-    background-color: rgba(108, 117, 125, 0.1);
+    background: linear-gradient(135deg, rgba(108, 117, 125, 0.2) 0%, rgba(108, 117, 125, 0.1) 100%);
     color: #6c757d;
-    border: 1px solid #6c757d;
+    border: 1px solid rgba(108, 117, 125, 0.3);
 }
 
-/* Legacy status classes */
-.active {
-    background-color: rgba(0, 128, 0, 0.1);
-    color: green;
-    border: 1px solid green;
-}
-
-.inactive {
-    background-color: rgba(255, 0, 0, 0.1);
-    color: red;
-    border: 1px solid red;
-}
-
-/* Order name styles */
-.orderName {
-    max-width: 250px;
-}
-
-.orderDescription {
-    font-size: 12px;
-    color: #666;
-    margin-top: 4px;
-    font-style: italic;
-}
-
-/* Order type styles */
 .orderType {
-    background-color: rgba(108, 117, 125, 0.1);
-    color: #495057;
-    padding: 2px 8px;
-    border-radius: 4px;
+    background: linear-gradient(135deg, rgba(93, 87, 201, 0.15) 0%, rgba(93, 87, 201, 0.05) 100%);
+    color: #5d57c9;
+    padding: 4px 10px;
+    border-radius: 6px;
     font-size: 11px;
+    font-weight: 600;
+    display: inline-block;
+    border: 1px solid rgba(93, 87, 201, 0.2);
 }
 
-/* Food count styles */
 .foodCount {
-    background-color: rgba(0, 123, 255, 0.1);
+    background: linear-gradient(135deg, rgba(0, 123, 255, 0.15) 0%, rgba(0, 123, 255, 0.05) 100%);
     color: #007bff;
-    padding: 2px 8px;
-    border-radius: 4px;
+    padding: 4px 10px;
+    border-radius: 6px;
     font-size: 11px;
-    font-weight: bold;
+    font-weight: 600;
+    display: inline-block;
+    border: 1px solid rgba(0, 123, 255, 0.2);
 }
 
-/* Price styles */
 .price {
-    font-weight: bold;
-    color: #28a745;
+    font-weight: 700;
+    color: #0acf97;
     text-align: right;
+    font-size: 15px;
 }
 
 .viewButton {
-    padding: 6px 12px;
-    background-color: #5d57c9;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #5d57c9 0%, #4a45a0 100%);
     color: white;
     border: none;
-    border-radius: 4px;
+    border-radius: 8px;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(93, 87, 201, 0.3);
 }
 
 .viewButton:hover {
-    background-color: #4a45a0;
+    background: linear-gradient(135deg, #4a45a0 0%, #5d57c9 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(93, 87, 201, 0.4);
+}
+
+.viewButton:active {
+    transform: translateY(0);
 }
 
 .modalOverlay {
@@ -154,102 +193,161 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 1000;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
 }
 
 .modal {
-    background-color: var(--bgSoft);
-    border-radius: 10px;
-    width: 800px;
-    max-width: 90%;
+    background: var(--bgSoft);
+    border-radius: 16px;
+    width: 900px;
+    max-width: 95%;
     max-height: 90vh;
     color: var(--text);
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }
 
 .modalHeader {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 20px;
-    border-bottom: 1px solid #ddd;
-    background-color: var(--bg);
+    padding: 24px;
+    border-bottom: 2px solid rgba(102, 126, 234, 0.2);
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
 }
 
 .modalHeader h2 {
     margin: 0;
-    font-size: 20px;
+    font-size: 24px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .closeButton {
-    background: none;
-    border: none;
+    background: rgba(220, 53, 69, 0.1);
+    border: 1px solid rgba(220, 53, 69, 0.2);
     font-size: 24px;
     cursor: pointer;
-    color: var(--text);
-    width: 30px;
-    height: 30px;
+    color: #dc3545;
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: 50%;
+    transition: all 0.2s ease;
+    font-weight: 300;
 }
 
 .closeButton:hover {
-    background-color: rgba(255, 0, 0, 0.1);
-    color: red;
+    background: rgba(220, 53, 69, 0.2);
+    transform: rotate(90deg);
+    border-color: #dc3545;
 }
 
 .modalContent {
-    padding: 20px;
+    padding: 24px;
     overflow-y: auto;
     flex: 1;
 }
 
 .orderInfo, .priceInfo, .foodInfo {
-    margin-bottom: 24px;
+    margin-bottom: 32px;
 }
 
 .orderInfo h3, .priceInfo h3, .foodInfo h3 {
-    margin: 0 0 16px 0;
+    margin: 0 0 20px 0;
     color: var(--text);
-    font-size: 16px;
-    border-bottom: 2px solid #5d57c9;
-    padding-bottom: 8px;
+    font-size: 18px;
+    font-weight: 700;
+    border-bottom: 3px solid #5d57c9;
+    padding-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.orderInfo h3::before, .priceInfo h3::before, .foodInfo h3::before {
+    content: '';
+    width: 4px;
+    height: 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 2px;
 }
 
 .infoGrid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
 }
 
 .infoItem {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
+    padding: 16px;
+    background: var(--bg);
+    border-radius: 10px;
+    border: 1px solid rgba(102, 126, 234, 0.1);
+    transition: all 0.2s ease;
+}
+
+.infoItem:hover {
+    border-color: rgba(102, 126, 234, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
 }
 
 .infoItem strong {
-    color: #666;
-    font-size: 12px;
+    color: #8391a2;
+    font-size: 11px;
     text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
 }
 
-.infoItem span {
+.infoItem p {
     color: var(--text);
-    font-size: 14px;
+    font-size: 15px;
+    font-weight: 500;
+    margin: 0;
 }
 
 .priceGrid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, 1fr);
     gap: 16px;
 }
 
@@ -257,138 +355,173 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px;
-    background-color: var(--bg);
-    border-radius: 8px;
+    padding: 20px;
+    background: linear-gradient(135deg, rgba(10, 207, 151, 0.1) 0%, rgba(10, 207, 151, 0.05) 100%);
+    border-radius: 12px;
+    border: 2px solid rgba(10, 207, 151, 0.2);
 }
 
 .priceItem strong {
-    color: #666;
+    color: #8391a2;
     font-size: 14px;
+    font-weight: 600;
 }
 
-.priceItem span {
-    font-weight: bold;
-    color: var(--text);
+.priceItem p {
+    font-weight: 700;
+    color: #0acf97;
+    font-size: 18px;
+    margin: 0;
 }
 
 .finalPrice {
-    color: #28a745 !important;
-    font-size: 16px !important;
-}
-
-.foodList {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.foodItem {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px;
-    background-color: var(--bg);
-    border-radius: 8px;
-    border-left: 4px solid #5d57c9;
-}
-
-.foodDetails {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.foodName {
-    font-weight: bold;
-    color: var(--text);
-    font-size: 14px;
-}
-
-.foodId {
-    color: #666;
-    font-size: 12px;
-}
-
-.foodQuantity {
-    background-color: rgba(93, 87, 201, 0.1);
-    color: #5d57c9;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: bold;
+    color: #0acf97 !important;
+    font-size: 20px !important;
+    font-weight: 700 !important;
 }
 
 .modalButtons {
     display: flex;
     justify-content: flex-end;
-    padding: 20px;
-    border-top: 1px solid #ddd;
-    background-color: var(--bg);
+    padding: 20px 24px;
+    border-top: 2px solid rgba(102, 126, 234, 0.1);
+    background: var(--bg);
 }
 
 .cancelButton {
-    padding: 10px 20px;
-    background-color: #dc3545;
+    padding: 12px 32px;
+    background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
     color: white;
     border: none;
-    border-radius: 5px;
+    border-radius: 8px;
     cursor: pointer;
     font-size: 14px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(108, 117, 125, 0.3);
 }
 
 .cancelButton:hover {
-    background-color: #c82333;
+    background: linear-gradient(135deg, #5a6268 0%, #6c757d 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.4);
+}
+
+.cancelButton:active {
+    transform: translateY(0);
 }
 
 .loading {
     text-align: center;
-    padding: 30px;
+    padding: 60px 30px;
     color: var(--text);
+    font-size: 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+.loading::before {
+    content: '';
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(102, 126, 234, 0.2);
+    border-top-color: #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .error {
-    color: crimson;
+    color: #dc3545;
     text-align: center;
-    padding: 20px;
-    background-color: var(--bgSoft);
-    border-radius: 5px;
+    padding: 24px;
+    background: linear-gradient(135deg, rgba(220, 53, 69, 0.1) 0%, rgba(220, 53, 69, 0.05) 100%);
+    border-radius: 12px;
     margin: 20px 0;
+    border: 1px solid rgba(220, 53, 69, 0.2);
 }
 
 .noData {
     text-align: center;
-    padding: 1rem;
-    color: #aaa;
+    padding: 40px 1rem;
+    color: #8391a2;
     font-style: italic;
+    font-size: 14px;
 }
 
 /* Responsive design */
 @media (max-width: 768px) {
+    .container {
+        padding: 16px;
+    }
+
+    .top {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .top h1 {
+        font-size: 24px;
+    }
+
     .modal {
-        width: 95%;
+        width: 98%;
         max-height: 95vh;
     }
-    
+
     .table {
         font-size: 12px;
+        display: block;
+        overflow-x: auto;
     }
-    
+
+    .table thead td,
     .table td {
-        padding: 8px;
+        padding: 10px 8px;
+        white-space: nowrap;
     }
-    
+
     .infoGrid {
         grid-template-columns: 1fr;
     }
-    
+
     .priceGrid {
         grid-template-columns: 1fr;
     }
-    
-    .foodItem {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
+
+    .modalHeader h2 {
+        font-size: 20px;
+    }
+
+    .modalContent {
+        padding: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .table {
+        font-size: 11px;
+    }
+
+    .table thead td,
+    .table td {
+        padding: 8px 6px;
+    }
+
+    .viewButton {
+        padding: 6px 12px;
+        font-size: 11px;
+    }
+
+    .status {
+        font-size: 10px;
+        padding: 4px 8px;
     }
 }

@@ -35,6 +35,22 @@ export const statisticService = {
     }
   },
 
+  getDashboardStats: async (startDate, endDate) => {
+    try {
+      const params = new URLSearchParams();
+      if (startDate) params.append('startDate', startDate);
+      if (endDate) params.append('endDate', endDate);
+      
+      const { data } = await apiRequest(`${API_BASE_URL}/api/statistics/dashboard?${params.toString()}`, {
+        method: 'GET'
+      });
+      return data;
+    } catch (error) {
+      console.error('Error fetching dashboard statistics:', error);
+      throw error;
+    }
+  },
+
   downloadRevenueExport: async (startDate, endDate) => {
     try {
       const params = new URLSearchParams();

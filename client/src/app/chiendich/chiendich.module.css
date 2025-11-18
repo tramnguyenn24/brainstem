@@ -292,3 +292,168 @@
   margin-bottom: 20px;
 }
 
+/* Summary Cards */
+.summaryCards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.summaryCard {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  transition: transform 0.3s ease;
+}
+
+.summaryCard:nth-child(2) {
+  background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);
+  box-shadow: 0 4px 15px rgba(78, 205, 196, 0.3);
+}
+
+.summaryCard:nth-child(3) {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  box-shadow: 0 4px 15px rgba(245, 87, 108, 0.3);
+}
+
+.summaryCard:nth-child(4) {
+  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+  box-shadow: 0 4px 15px rgba(250, 112, 154, 0.3);
+}
+
+.summaryCard:nth-child(5) {
+  background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);
+  box-shadow: 0 4px 15px rgba(48, 207, 208, 0.3);
+}
+
+.summaryCard:nth-child(6) {
+  background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+  box-shadow: 0 4px 15px rgba(168, 237, 234, 0.3);
+}
+
+.summaryCard:hover {
+  transform: translateY(-5px);
+}
+
+.summaryCardLabel {
+  font-size: 0.8125rem;
+  color: rgba(255,255,255,0.9);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.summaryCardValue {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+/* Time Filter */
+.timeFilter {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  margin-bottom: 20px;
+  padding: 16px;
+  background-color: var(--bgSoft);
+  border-radius: 8px;
+}
+
+.dateGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dateGroup label {
+  font-size: 14px;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.dateInput {
+  padding: 8px 12px;
+  border: 1px solid var(--bgSoft);
+  border-radius: 6px;
+  background-color: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+}
+
+.dateInput:focus {
+  outline: none;
+  border-color: #5d57c9;
+}
+
+.filterButton {
+  padding: 8px 20px;
+  background-color: #5d57c9;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+  height: fit-content;
+}
+
+.filterButton:hover {
+  background-color: #4a45a8;
+}
+
+.clearFilterButton {
+  padding: 8px 20px;
+  background-color: var(--bgSoft);
+  color: var(--text);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+  height: fit-content;
+}
+
+.clearFilterButton:hover {
+  background-color: #374151;
+}
+
+/* Sortable Header */
+.sortableHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sortButton {
+  background: none;
+  border: none;
+  color: var(--textSoft);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  border-radius: 4px;
+  width: 24px;
+  height: 24px;
+}
+
+.sortButton:hover {
+  background-color: var(--bgSoft);
+  color: var(--text);
+}
+
+.sortButton.active {
+  color: #5d57c9;
+  background-color: rgba(93, 87, 201, 0.1);
+}
+

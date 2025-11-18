@@ -175,6 +175,18 @@ const ReportPage = () => {
     // Get status class name
     const getStatusClass = (status) => {
         switch (status) {
+            case 'enrolled':
+                return styles.statusCompleted;
+            case 'completed':
+                return styles.statusCompleted;
+            case 'pending':
+                return styles.statusPending;
+            case 'cancelled':
+                return styles.statusCancelled;
+            case 'active':
+                return styles.statusPaid;
+            case 'inactive':
+                return styles.statusFailed;
             case 'DONE':
                 return styles.statusCompleted;
             case 'PAID':
@@ -206,12 +218,18 @@ const ReportPage = () => {
         return methodMap[method] || method || 'N/A';
     };
 
+    // Calculate summary stats
+    const totalOrders = orders.length;
+    const enrolledCount = orders.filter(s => s.enrollmentStatus === 'enrolled').length;
+    const pendingCount = orders.filter(s => s.enrollmentStatus === 'pending').length;
+    const totalRevenue = orders.reduce((sum, s) => sum + (Number(s.tuitionFee) || Number(s.fee) || 0), 0);
+
     if (loading) return <div className={styles.loading}>Đang tải...</div>;
 
     return (
         <div className={styles.container}>
             <div className={styles.top}>
-                <h1>Báo cáo Thống kê Đăng ký</h1>
+                <h1>📊 Báo cáo Thống kê Đăng ký</h1>
                 <FilterableSearch
                     placeholder="Tìm kiếm theo tên học viên hoặc email..."
                     onChange={handleSearch}
@@ -227,6 +245,55 @@ const ReportPage = () => {
                         { value: "cancelled", label: "Đã hủy" },
                     ]}
                 />
+            </div>
+
+            {/* Summary Cards */}
+            <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '16px',
+                marginBottom: '24px'
+            }}>
+                <div style={{
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    padding: '20px',
+                    borderRadius: '12px',
+                    color: 'white',
+                    boxShadow: '0 4px 15px rgba(102, 126, 234, 0.3)'
+                }}>
+                    <div style={{fontSize: '12px', opacity: 0.9, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px'}}>Tổng đăng ký</div>
+                    <div style={{fontSize: '28px', fontWeight: 700}}>{totalOrders}</div>
+                </div>
+                <div style={{
+                    background: 'linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%)',
+                    padding: '20px',
+                    borderRadius: '12px',
+                    color: 'white',
+                    boxShadow: '0 4px 15px rgba(78, 205, 196, 0.3)'
+                }}>
+                    <div style={{fontSize: '12px', opacity: 0.9, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px'}}>Đã đăng ký</div>
+                    <div style={{fontSize: '28px', fontWeight: 700}}>{enrolledCount}</div>
+                </div>
+                <div style={{
+                    background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                    padding: '20px',
+                    borderRadius: '12px',
+                    color: 'white',
+                    boxShadow: '0 4px 15px rgba(245, 87, 108, 0.3)'
+                }}>
+                    <div style={{fontSize: '12px', opacity: 0.9, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px'}}>Chờ xử lý</div>
+                    <div style={{fontSize: '28px', fontWeight: 700}}>{pendingCount}</div>
+                </div>
+                <div style={{
+                    background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+                    padding: '20px',
+                    borderRadius: '12px',
+                    color: 'white',
+                    boxShadow: '0 4px 15px rgba(250, 112, 154, 0.3)'
+                }}>
+                    <div style={{fontSize: '12px', opacity: 0.9, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px'}}>Tổng học phí</div>
+                    <div style={{fontSize: '20px', fontWeight: 700}}>{formatCurrency(totalRevenue)}</div>
+                </div>
             </div>
 
             <table className={styles.table}>
@@ -269,10 +336,10 @@ const ReportPage = () => {
                                 </td>
                                 <td>
                                     <p className={`${styles.status} ${getStatusClass(student.enrollmentStatus || student.status)}`}>
-                                        {student.enrollmentStatus === 'enrolled' ? 'Đã đăng ký' : 
-                                         student.enrollmentStatus === 'pending' ? 'Chờ xử lý' :
-                                         student.enrollmentStatus === 'completed' ? 'Hoàn thành' :
-                                         student.enrollmentStatus === 'cancelled' ? 'Đã hủy' :
+                                        {student.enrollmentStatus === 'enrolled' ? '✓ Đã đăng ký' : 
+                                         student.enrollmentStatus === 'pending' ? '⏳ Chờ xử lý' :
+                                         student.enrollmentStatus === 'completed' ? '✅ Hoàn thành' :
+                                         student.enrollmentStatus === 'cancelled' ? '❌ Đã hủy' :
                                          student.enrollmentStatus || student.status || 'N/A'}
                                     </p>
                                 </td>

@@ -41,6 +41,11 @@ const Page = () => {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [channels, setChannels] = useState([]);
   const [staff, setStaff] = useState([]);
+  const [summary, setSummary] = useState(null);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [sortBy, setSortBy] = useState("");
+  const [sortDirection, setSortDirection] = useState("desc");
   
   // Lấy tham số từ URL
   const searchParams = useSearchParams();
@@ -53,12 +58,39 @@ const Page = () => {
   // Lấy các tham số lọc từ URL
   const searchFilter = searchParams.get("search") || "";
   const statusFilter = searchParams.get("status") || "";
+  const startDateFilter = searchParams.get("startDate") || "";
+  const endDateFilter = searchParams.get("endDate") || "";
+  const sortByFilter = searchParams.get("sortBy") || "";
+  const sortDirectionFilter = searchParams.get("sortDirection") || "desc";
 
   // Sync state với URL parameters
   useEffect(() => {
     setSearchTerm(searchFilter);
     setSelectedStatus(statusFilter);
-  }, [searchFilter, statusFilter]);
+    setStartDate(startDateFilter);
+    setEndDate(endDateFilter);
+    setSortBy(sortByFilter);
+    setSortDirection(sortDirectionFilter);
+  }, [searchFilter, statusFilter, startDateFilter, endDateFilter, sortByFilter, sortDirectionFilter]);
+
+  // Fetch summary data
+  useEffect(() => {
+    const fetchSummary = async () => {
+      try {
+        const params = new URLSearchParams();
+        if (startDateFilter) params.append('startDate', startDateFilter);
+        if (endDateFilter) params.append('endDate', endDateFilter);
+        
+        const response = await campaignService.getCampaignSummary();
+        if (response) {
+          setSummary(response);
+        }
+      } catch (err) {
+        console.error("Error fetching campaign summary:", err);
+      }
+    };
+    fetchSummary();
+  }, [startDateFilter, endDateFilter]);
 
   // Fetch channels and staff for dropdowns
   useEffect(() => {
@@ -89,8 +121,8 @@ const Page = () => {
 
   // Effect khi trang hoặc bộ lọc thay đổi, gọi API để lấy dữ liệu
   useEffect(() => {
-    fetchCampaigns(currentPage, itemsPerPage, searchFilter, statusFilter);
-  }, [currentPage, itemsPerPage, searchFilter, statusFilter]);
+    fetchCampaigns(currentPage, itemsPerPage, searchFilter, statusFilter, sortByFilter, sortDirectionFilter);
+  }, [currentPage, itemsPerPage, searchFilter, statusFilter, startDateFilter, endDateFilter, sortByFilter, sortDirectionFilter]);
 
   useEffect(() => {
     const timerId = setTimeout(() => {
@@ -125,7 +157,7 @@ const Page = () => {
     replace(`${pathname}?${params}`);
   };
 
-  const fetchCampaigns = async (page, size, search = "", status = "") => {
+  const fetchCampaigns = async (page, size, search = "", status = "", sortByParam = "", sortDirectionParam = "desc") => {
     try {
       setLoading(true);
       const response = await campaignService.getCampaigns({ 
@@ -133,8 +165,8 @@ const Page = () => {
         size, 
         search, 
         status,
-        sortBy: 'createdAt',
-        sortDirection: 'desc'
+        sortBy: sortByParam || 'createdAt',
+        sortDirection: sortDirectionParam || 'desc'
       });
       
       console.log("API Response (Campaigns):", response);
@@ -152,7 +184,27 @@ const Page = () => {
       
       // Kiểm tra và xử lý dữ liệu từ API
       if (response.items && Array.isArray(response.items)) {
-        setCampaigns(response.items);
+        let processedItems = response.items;
+        
+        // Nếu sort theo conversionRate, cần sort ở frontend vì đây là giá trị tính toán
+        if (sortByParam === 'conversionRate') {
+          processedItems = [...response.items].sort((a, b) => {
+            const rateA = (a.potentialStudentsCount > 0) 
+              ? (a.newStudentsCount || 0) / a.potentialStudentsCount 
+              : 0;
+            const rateB = (b.potentialStudentsCount > 0) 
+              ? (b.newStudentsCount || 0) / b.potentialStudentsCount 
+              : 0;
+            
+            if (sortDirectionParam === 'desc') {
+              return rateB - rateA;
+            } else {
+              return rateA - rateB;
+            }
+          });
+        }
+        
+        setCampaigns(processedItems);
         
         // Lưu metadata để sử dụng cho phân trang
         if (response.page !== undefined) {
@@ -202,6 +254,32 @@ const Page = () => {
   const handleStatusChange = (status) => {
     setSelectedStatus(status);
     updateFilters({ status });
+  };
+
+  const handleDateFilterChange = () => {
+    updateFilters({ 
+      startDate: startDate || undefined,
+      endDate: endDate || undefined
+    });
+  };
+
+  const handleSort = (column) => {
+    let newSortDirection = 'desc';
+    if (sortBy === column) {
+      // Nếu đang sắp xếp theo cột này, đảo chiều
+      newSortDirection = sortDirection === 'desc' ? 'asc' : 'desc';
+    }
+    updateFilters({ 
+      sortBy: column,
+      sortDirection: newSortDirection
+    });
+  };
+
+  const getSortIcon = (column) => {
+    if (sortBy !== column) {
+      return '⇅'; // Neutral sort icon
+    }
+    return sortDirection === 'desc' ? '↓' : '↑';
   };
 
   const handleEdit = (campaign) => {
@@ -360,8 +438,59 @@ const Page = () => {
 
   if (loading) return <div className={Style.loading}>Loading...</div>;
 
+  // Format currency
+  const formatCurrency = (value) => {
+    if (!value) return '0 ₫';
+    return new Intl.NumberFormat('vi-VN', { 
+      style: 'currency', 
+      currency: 'VND' 
+    }).format(value);
+  };
+
+  // Format number
+  const formatNumber = (value) => {
+    if (!value) return '0';
+    return new Intl.NumberFormat('vi-VN').format(value);
+  };
+
+  // Calculate conversion rate
+  const calculateConversionRate = (potential, newStudents) => {
+    if (!potential || potential === 0) return '0%';
+    return `${((newStudents / potential) * 100).toFixed(2)}%`;
+  };
+
   return (
     <div className={Style.container}>
+      {/* Summary Cards */}
+      {summary && (
+        <div className={Style.summaryCards}>
+          <div className={Style.summaryCard}>
+            <div className={Style.summaryCardLabel}>Tổng số CD</div>
+            <div className={Style.summaryCardValue}>{formatNumber(summary.total || 0)}</div>
+          </div>
+          <div className={Style.summaryCard}>
+            <div className={Style.summaryCardLabel}>SL Chiến dịch đang chạy</div>
+            <div className={Style.summaryCardValue}>{formatNumber(summary.running || 0)}</div>
+          </div>
+          <div className={Style.summaryCard}>
+            <div className={Style.summaryCardLabel}>Chiến dịch đã hoàn thành</div>
+            <div className={Style.summaryCardValue}>{formatNumber(summary.completed || 0)}</div>
+          </div>
+          <div className={Style.summaryCard}>
+            <div className={Style.summaryCardLabel}>Đã chi</div>
+            <div className={Style.summaryCardValue}>{formatCurrency(summary.totalSpent || 0)}</div>
+          </div>
+          <div className={Style.summaryCard}>
+            <div className={Style.summaryCardLabel}>Doanh thu</div>
+            <div className={Style.summaryCardValue}>{formatCurrency(summary.totalRevenue || 0)}</div>
+          </div>
+          <div className={Style.summaryCard}>
+            <div className={Style.summaryCardLabel}>Học viên mới</div>
+            <div className={Style.summaryCardValue}>{formatNumber(summary.totalNewStudents || 0)}</div>
+          </div>
+        </div>
+      )}
+
       <div className={Style.top}>
         <Suspense fallback={<div>Loading...</div>}>
           <FilterableSearch 
@@ -383,6 +512,46 @@ const Page = () => {
           <button className={Style.addButton}>Thêm chiến dịch</button>
         </Link>
       </div>
+
+      {/* Time Filter */}
+      <div className={Style.timeFilter}>
+        <div className={Style.dateGroup}>
+          <label>Từ ngày:</label>
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className={Style.dateInput}
+          />
+        </div>
+        <div className={Style.dateGroup}>
+          <label>Đến ngày:</label>
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className={Style.dateInput}
+          />
+        </div>
+        <button 
+          className={Style.filterButton}
+          onClick={handleDateFilterChange}
+        >
+          Áp dụng
+        </button>
+        {(startDate || endDate) && (
+          <button 
+            className={Style.clearFilterButton}
+            onClick={() => {
+              setStartDate("");
+              setEndDate("");
+              updateFilters({ startDate: undefined, endDate: undefined });
+            }}
+          >
+            Xóa bộ lọc
+          </button>
+        )}
+      </div>
     
       {/* Hiển thị kết quả tìm kiếm */}
       {searchFilter && (
@@ -399,10 +568,67 @@ const Page = () => {
         <thead>
           <tr>
             <td>Tên chiến dịch</td>
-            <td>Kênh</td>
             <td>Người phụ trách</td>
-            <td>Ngân sách</td>
-            <td>Đã chi</td>
+            <td>
+              <div className={Style.sortableHeader}>
+                Đã chi
+                <button 
+                  className={`${Style.sortButton} ${sortBy === 'cost' ? Style.active : ''}`}
+                  onClick={() => handleSort('cost')}
+                  title="Sắp xếp theo chi phí"
+                >
+                  {getSortIcon('cost')}
+                </button>
+              </div>
+            </td>
+            <td>
+              <div className={Style.sortableHeader}>
+                Doanh thu
+                <button 
+                  className={`${Style.sortButton} ${sortBy === 'revenue' ? Style.active : ''}`}
+                  onClick={() => handleSort('revenue')}
+                  title="Sắp xếp theo doanh thu"
+                >
+                  {getSortIcon('revenue')}
+                </button>
+              </div>
+            </td>
+            <td>
+              <div className={Style.sortableHeader}>
+                HV mới
+                <button 
+                  className={`${Style.sortButton} ${sortBy === 'newStudentsCount' ? Style.active : ''}`}
+                  onClick={() => handleSort('newStudentsCount')}
+                  title="Sắp xếp theo số học viên mới"
+                >
+                  {getSortIcon('newStudentsCount')}
+                </button>
+              </div>
+            </td>
+            <td>
+              <div className={Style.sortableHeader}>
+                HV tiềm năng
+                <button 
+                  className={`${Style.sortButton} ${sortBy === 'potentialStudentsCount' ? Style.active : ''}`}
+                  onClick={() => handleSort('potentialStudentsCount')}
+                  title="Sắp xếp theo số học viên tiềm năng"
+                >
+                  {getSortIcon('potentialStudentsCount')}
+                </button>
+              </div>
+            </td>
+            <td>
+              <div className={Style.sortableHeader}>
+                Tỉ lệ chuyển đổi (HVTN/HVM)
+                <button 
+                  className={`${Style.sortButton} ${sortBy === 'conversionRate' ? Style.active : ''}`}
+                  onClick={() => handleSort('conversionRate')}
+                  title="Sắp xếp theo tỉ lệ chuyển đổi"
+                >
+                  {getSortIcon('conversionRate')}
+                </button>
+              </div>
+            </td>
             <td>ROI</td>
             <td>Trạng thái</td>
             <td>Hành động</td>
@@ -416,21 +642,22 @@ const Page = () => {
                   {campaign.name}
                 </div>
               </td>
-              <td>{campaign.channelName || 'N/A'}</td>
               <td>{campaign.ownerStaffName || 'N/A'}</td>
               <td>
-                {campaign.budget ? new Intl.NumberFormat('vi-VN', { 
-                  style: 'currency', 
-                  currency: 'VND' 
-                }).format(campaign.budget) : '0 VNĐ'}
+                {campaign.cost ? formatCurrency(campaign.cost) : '0 ₫'}
               </td>
               <td>
-                {campaign.spend ? new Intl.NumberFormat('vi-VN', { 
-                  style: 'currency', 
-                  currency: 'VND' 
-                }).format(campaign.spend) : '0 VNĐ'}
+                {campaign.revenue ? formatCurrency(campaign.revenue) : '0 ₫'}
               </td>
-              <td>{campaign.roi != null ? `${Number(campaign.roi).toFixed(2)}x` : '0x'}</td>
+              <td>{formatNumber(campaign.newStudentsCount || 0)}</td>
+              <td>{formatNumber(campaign.potentialStudentsCount || 0)}</td>
+              <td>
+                {calculateConversionRate(
+                  campaign.potentialStudentsCount || 0,
+                  campaign.newStudentsCount || 0
+                )}
+              </td>
+              <td>{campaign.roi != null ? `${Number(campaign.roi).toFixed(2)}%` : 'N/A'}</td>
               <td>
                 <span className={`${Style.status} ${getStatusColor(campaign.status)}`}>
                   {getStatusText(campaign.status)}
@@ -604,8 +831,18 @@ const Page = () => {
                 </span>
               </div>
               <div className={Style.detailItem}>
+                <label>Kênh:</label>
+                <span>{selectedCampaign?.channelName || 'N/A'}</span>
+              </div>
+              <div className={Style.detailItem}>
                 <label>Người phụ trách:</label>
                 <span>{selectedCampaign?.ownerStaffName || 'N/A'}</span>
+              </div>
+              <div className={Style.detailItem}>
+                <label>Ngân sách:</label>
+                <span>
+                  {selectedCampaign?.budget ? formatCurrency(selectedCampaign.budget) : '0 ₫'}
+                </span>
               </div>
               <div className={Style.detailItem}>
                 <label>Số HVTN:</label>
@@ -724,4 +961,5 @@ const Page = () => {
 };
 
 export default Page;
+
 

@@ -11,6 +11,7 @@ import { AiOutlineDollarCircle } from "react-icons/ai";
 import { FaChartBar } from "react-icons/fa";
 import { FaHome } from "react-icons/fa";
 import { HiOutlineMegaphone } from "react-icons/hi2";
+import { MdCastForEducation } from "react-icons/md";
 import images from "../../../img/index"; 
 
 
@@ -34,6 +35,11 @@ const menuItems = [
         icon: <FaRegIdCard />,
       },
       {
+        title: "QL Khóa học",
+        path: "/khoahoc",
+        icon: <MdCastForEducation />,
+      },
+      {
         title: "HV Tiềm năng",
         path: "/hvtiemnang",
         icon: <PiMedal />,
@@ -50,7 +56,7 @@ const menuItems = [
       },
       {
         title: "Kênh truyền thông",
-        path: "/media",
+        path: "/channel",
         icon: <GrChannel />,
       },
       {

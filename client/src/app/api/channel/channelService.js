@@ -88,6 +88,73 @@ export const channelService = {
       console.error('Error fetching channel campaigns:', error);
       throw error;
     }
+  },
+
+  getChannelsWithStats: async (options = {}) => {
+    try {
+      const queryString = buildQueryString(options);
+      const { data } = await apiRequest(`${API_BASE_URL}/api/channels/with-stats?${queryString}`, {
+        method: 'GET'
+      });
+      return data;
+    } catch (error) {
+      console.error('Error fetching channels with stats:', error);
+      throw error;
+    }
+  },
+
+  getChannelStats: async () => {
+    try {
+      const { data } = await apiRequest(`${API_BASE_URL}/api/channels/stats`, {
+        method: 'GET'
+      });
+      return data;
+    } catch (error) {
+      console.error('Error fetching channel stats:', error);
+      throw error;
+    }
+  },
+
+  addChannel: async channel => {
+    try {
+      const { data } = await apiRequest(`${API_BASE_URL}/api/channels`, {
+        method: 'POST',
+        body: JSON.stringify({
+          name: channel.name,
+          type: channel.type,
+          status: channel.status || 'active'
+        })
+      });
+      return data;
+    } catch (error) {
+      console.error('Error creating channel:', error);
+      throw error;
+    }
+  },
+
+  updateChannel: async (id, updates) => {
+    try {
+      const { data } = await apiRequest(`${API_BASE_URL}/api/channels/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(updates)
+      });
+      return data;
+    } catch (error) {
+      console.error('Error updating channel:', error);
+      throw error;
+    }
+  },
+
+  deleteChannel: async id => {
+    try {
+      const { data } = await apiRequest(`${API_BASE_URL}/api/channels/${id}`, {
+        method: 'DELETE'
+      });
+      return data;
+    } catch (error) {
+      console.error('Error deleting channel:', error);
+      throw error;
+    }
   }
 };
 

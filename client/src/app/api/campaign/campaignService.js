@@ -93,6 +93,23 @@ export const campaignService = {
     }
   },
 
+  getFeaturedCampaigns: async (options = {}) => {
+    try {
+      const { limit = 5, status } = options;
+      const params = new URLSearchParams();
+      if (limit) params.append('limit', limit.toString());
+      if (status) params.append('status', status);
+      
+      const { data } = await apiRequest(`${API_BASE_URL}/api/campaigns/featured?${params.toString()}`, {
+        method: 'GET'
+      });
+      return data;
+    } catch (error) {
+      console.error('Error fetching featured campaigns:', error);
+      throw error;
+    }
+  },
+
   addCampaign: async campaign => {
     try {
       const { data } = await apiRequest(`${API_BASE_URL}/api/campaigns`, {

@@ -52,6 +52,14 @@ const Page = () => {
   const roleFilter = searchParams.get("role") || "";
   const departmentFilter = searchParams.get("department") || "";
 
+  // Sync state với URL parameters
+  useEffect(() => {
+    setSearchTerm(nameFilter);
+    setSelectedStatus(statusFilter);
+    setSelectedRole(roleFilter);
+    setSelectedDepartment(departmentFilter);
+  }, [nameFilter, statusFilter, roleFilter, departmentFilter]);
+
   // Effect khi trang hoặc bộ lọc thay đổi, gọi API để lấy dữ liệu
   useEffect(() => {
     fetchStaff(currentPage, itemsPerPage, nameFilter, statusFilter, roleFilter, departmentFilter);
@@ -456,7 +464,7 @@ const Page = () => {
         <tbody>
           {staffMembers.length === 0 ? (
             <tr>
-              <td colSpan="7" className={Style.noData}>
+              <td colSpan={7} className={Style.noData}>
                 Không có dữ liệu
               </td>
             </tr>

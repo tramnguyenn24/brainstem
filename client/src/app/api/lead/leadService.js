@@ -14,6 +14,7 @@ const buildQueryString = (options = {}) => {
     channelId,
     assignedStaffId,
     tags,
+    campaignName,
     sortBy = 'createdAt',
     sortDirection = 'desc'
   } = options;
@@ -29,6 +30,7 @@ const buildQueryString = (options = {}) => {
   if (channelId) params.append('channelId', channelId.toString());
   if (assignedStaffId) params.append('assignedStaffId', assignedStaffId.toString());
   if (tags && Array.isArray(tags)) params.append('tags', tags.join(','));
+  if (campaignName) params.append('campaignName', campaignName);
   if (sortBy) params.append('sortBy', sortBy);
   if (sortDirection) params.append('sortDirection', sortDirection);
 
@@ -119,11 +121,11 @@ export const leadService = {
     }
   },
 
-  convertLead: async (id, { studentId = null, status = 'REGISTERED' } = {}) => {
+  convertLead: async (id, { studentId = null, status = 'REGISTERED', courseId = null } = {}) => {
     try {
       const { data } = await apiRequest(`${API_BASE_URL}/api/leads/${id}/convert`, {
         method: 'POST',
-        body: JSON.stringify({ studentId, status })
+        body: JSON.stringify({ studentId, status, courseId })
       });
       return data;
     } catch (error) {

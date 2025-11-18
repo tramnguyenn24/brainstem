@@ -14,6 +14,7 @@ const buildQueryString = (options = {}) => {
     channelId,
     assignedStaffId,
     newStudent,
+    campaignName,
     sortBy = 'fullName',
     sortDirection = 'asc'
   } = options;
@@ -29,6 +30,7 @@ const buildQueryString = (options = {}) => {
   if (channelId) params.append('channelId', channelId.toString());
   if (assignedStaffId) params.append('assignedStaffId', assignedStaffId.toString());
   if (typeof newStudent === 'boolean') params.append('newStudent', newStudent.toString());
+  if (campaignName) params.append('campaignName', campaignName);
   if (sortBy) params.append('sortBy', sortBy);
   if (sortDirection) params.append('sortDirection', sortDirection);
 
@@ -49,9 +51,19 @@ export const studentService = {
     }
   },
 
-  getStudentSummary: async () => {
+  getStudentSummary: async (options = {}) => {
     try {
-      const { data } = await apiRequest(`${API_BASE_URL}/api/students/summary`, {
+      const { startDate, endDate } = options;
+      const params = new URLSearchParams();
+      if (startDate) params.append('startDate', startDate);
+      if (endDate) params.append('endDate', endDate);
+      
+      const queryString = params.toString();
+      const url = queryString 
+        ? `${API_BASE_URL}/api/students/summary?${queryString}`
+        : `${API_BASE_URL}/api/students/summary`;
+      
+      const { data } = await apiRequest(url, {
         method: 'GET'
       });
       return data;

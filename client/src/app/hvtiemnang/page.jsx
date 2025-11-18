@@ -5,6 +5,7 @@ import { Pagination, FilterableSearch } from "../ui/dashboard/dashboardindex";
 import { useSearchParams, usePathname, useRouter } from "next/navigation";
 import { leadService } from "../api/lead/leadService";
 import { campaignService } from "../api/campaign/campaignService";
+import { courseService } from "../api/course/courseService";
 import Image from "next/image";
 import LogoutButton from "@/app/components/LogoutButton/LogoutButton";
 import Link from "next/link";
@@ -51,8 +52,11 @@ const Page = () => {
   const [showViewModal, setShowViewModal] = useState(false);
   const [showConvertModal, setShowConvertModal] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
+  const [courses, setCourses] = useState([]);
+  const [selectedCourseId, setSelectedCourseId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
+  const [campaignNameSearch, setCampaignNameSearch] = useState("");
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [formData, setFormData] = useState({
     HoTen: '',
@@ -75,6 +79,7 @@ const Page = () => {
   // Lấy các tham số lọc từ URL
   const nameFilter = searchParams.get("name") || "";
   const statusFilter = searchParams.get("status") || "";
+  const campaignNameFilter = searchParams.get("campaignName") || "";
 
   // Fetch campaigns on mount
   useEffect(() => {
@@ -93,10 +98,17 @@ const Page = () => {
     fetchCampaigns();
   }, []);
 
+  // Sync state với URL parameters
+  useEffect(() => {
+    setSearchTerm(nameFilter);
+    setSelectedStatus(statusFilter);
+    setCampaignNameSearch(campaignNameFilter);
+  }, [nameFilter, statusFilter, campaignNameFilter]);
+
   // Effect khi trang hoặc bộ lọc thay đổi, gọi API để lấy dữ liệu
   useEffect(() => {
-    fetchLeads(currentPage, itemsPerPage, nameFilter, statusFilter);
-  }, [currentPage, itemsPerPage, nameFilter, statusFilter]);
+    fetchLeads(currentPage, itemsPerPage, nameFilter, statusFilter, campaignNameFilter);
+  }, [currentPage, itemsPerPage, nameFilter, statusFilter, campaignNameFilter]);
 
   useEffect(() => {
     const timerId = setTimeout(() => {
@@ -110,6 +122,19 @@ const Page = () => {
       clearTimeout(timerId);
     };
   }, [searchTerm, nameFilter]);
+
+  useEffect(() => {
+    const timerId = setTimeout(() => {
+      if (campaignNameSearch !== campaignNameFilter) {
+        // Cập nhật URL với từ khóa tìm kiếm chiến dịch
+        updateFilters({ campaignName: campaignNameSearch });
+      }
+    }, 500);
+
+    return () => {
+      clearTimeout(timerId);
+    };
+  }, [campaignNameSearch, campaignNameFilter]);
 
   // Cập nhật bộ lọc vào URL và quay về trang đầu tiên
   const updateFilters = (newFilters) => {
@@ -131,7 +156,7 @@ const Page = () => {
     replace(`${pathname}?${params}`);
   };
 
-  const fetchLeads = async (page, pageSize, name = "", state = "") => {
+  const fetchLeads = async (page, pageSize, name = "", state = "", campaignName = "") => {
     try {
       setLoading(true);
       
@@ -140,7 +165,8 @@ const Page = () => {
         page: page + 1, // API sử dụng page bắt đầu từ 1
         size: pageSize,
         search: name,
-        status: state
+        status: state,
+        campaignName: campaignName
       });
       
       console.log("API Response (Leads):", response);
@@ -208,6 +234,10 @@ const Page = () => {
     setSearchTerm(value);
   };
 
+  const handleCampaignNameSearch = (value) => {
+    setCampaignNameSearch(value);
+  };
+
   const handleStatusChange = (status) => {
     setSelectedStatus(status);
     updateFilters({ status });
@@ -261,9 +291,30 @@ const Page = () => {
     }
   };
 
-  const handleConvert = (lead) => {
+  const handleConvert = async (lead) => {
     setSelectedLead(lead);
+    setSelectedCourseId(null);
     setShowConvertModal(true);
+    
+    // Fetch courses when opening convert modal
+    try {
+      const coursesResponse = await courseService.getCourses({ 
+        page: 1, 
+        size: 100,
+        status: 'active'
+      });
+      if (coursesResponse && coursesResponse.items) {
+        setCourses(coursesResponse.items);
+      } else if (Array.isArray(coursesResponse)) {
+        setCourses(coursesResponse);
+      }
+    } catch (err) {
+      console.error("Error fetching courses:", err);
+      toast.error("Không thể tải danh sách khóa học", {
+        duration: 3000,
+        position: "top-center"
+      });
+    }
   };
 
   // Function để lấy class CSS cho trạng thái
@@ -343,7 +394,7 @@ const Page = () => {
       });
       
       setShowEditModal(false);
-      fetchLeads(currentPage, itemsPerPage, nameFilter, statusFilter);
+      fetchLeads(currentPage, itemsPerPage, nameFilter, statusFilter, campaignNameFilter);
     } catch (err) {
       console.error("Error updating lead:", err);
       const errorMessage = getErrorMessage(err, "Không thể cập nhật học viên tiềm năng. Vui lòng thử lại!");
@@ -379,7 +430,7 @@ const Page = () => {
       });
       
       setShowDeleteModal(false);
-      fetchLeads(currentPage, itemsPerPage, nameFilter, statusFilter);
+      fetchLeads(currentPage, itemsPerPage, nameFilter, statusFilter, campaignNameFilter);
     } catch (err) {
       console.error("Error deleting lead:", err);
       const errorMessage = getErrorMessage(err, "Không thể xóa học viên tiềm năng. Vui lòng thử lại!");
@@ -400,22 +451,35 @@ const Page = () => {
       <div className={Style.top}>
         <h1>Quản lý Học viên Tiềm năng (Leads)</h1>
         <div className={Style.topRight}>
-          <FilterableSearch 
-            placeholder="Tìm kiếm theo tên hoặc email..." 
-            onChange={handleSearch}
-            onSearch={handleSearch}
-            value={searchTerm}
-            statusFilter={selectedStatus}
-            onStatusChange={handleStatusChange}
-            statusOptions={[
-              { value: '', label: 'Tất cả trạng thái' },
-              { value: 'INTERESTED', label: 'Quan tâm' },
-              { value: 'CONTACTED', label: 'Đã liên hệ' },
-              { value: 'QUALIFIED', label: 'Đủ điều kiện' },
-              { value: 'CONVERTED', label: 'Đã chuyển đổi' },
-              { value: 'LOST', label: 'Mất liên lạc' }
-            ]}
-          />
+          <div className={Style.searchGroup}>
+            <FilterableSearch 
+              placeholder="Tìm kiếm theo tên hoặc email..." 
+              onChange={handleSearch}
+              onSearch={handleSearch}
+              value={searchTerm}
+              statusFilter={selectedStatus}
+              onStatusChange={handleStatusChange}
+              statusOptions={[
+                { value: '', label: 'Tất cả trạng thái' },
+                { value: 'INTERESTED', label: 'Quan tâm' },
+                { value: 'CONTACTED', label: 'Đã liên hệ' },
+                { value: 'QUALIFIED', label: 'Đủ điều kiện' },
+                { value: 'CONVERTED', label: 'Đã chuyển đổi' },
+                { value: 'LOST', label: 'Mất liên lạc' }
+              ]}
+            />
+          </div>
+          <div className={Style.searchGroup}>
+            <FilterableSearch 
+              placeholder="Tìm kiếm theo tên chiến dịch (CD)..." 
+              onChange={handleCampaignNameSearch}
+              onSearch={handleCampaignNameSearch}
+              value={campaignNameSearch}
+              statusFilter={undefined}
+              onStatusChange={undefined}
+              statusOptions={undefined}
+            />
+          </div>
           <Link href="/hvtiemnang/add" className={Style.addButton}>
             Thêm Lead mới
           </Link>
@@ -423,10 +487,15 @@ const Page = () => {
       </div>
 
       {/* Hiển thị kết quả tìm kiếm */}
-      {searchTerm && (
+      {(nameFilter || campaignNameFilter) && (
         <div className={Style.searchInfo}>
-          Kết quả tìm kiếm cho: <strong>{searchTerm}</strong> | 
-          Tìm thấy: <strong>{leads.length}</strong> học viên tiềm năng
+          {nameFilter && (
+            <span>Kết quả tìm kiếm: <strong>{nameFilter}</strong></span>
+          )}
+          {campaignNameFilter && (
+            <span>{nameFilter ? ' | ' : ''}Tên CD: <strong>{campaignNameFilter}</strong></span>
+          )}
+          <span> | Tìm thấy: <strong>{leads.length}</strong> học viên tiềm năng</span>
           {selectedStatus && (
             <span> | Trạng thái: <strong>{selectedStatus}</strong></span>
           )}
@@ -449,7 +518,7 @@ const Page = () => {
         <tbody>
           {leads.length === 0 ? (
             <tr>
-              <td colSpan="8" className={Style.noData}>
+              <td colSpan={8} className={Style.noData}>
                 Không có dữ liệu
               </td>
             </tr>
@@ -688,14 +757,34 @@ const Page = () => {
             <h2>Chuyển đổi thành Học viên</h2>
             <p>Bạn có chắc chắn muốn chuyển đổi <strong>{selectedLead?.fullName || selectedLead?.HoTen}</strong> thành học viên chính thức?</p>
             
-            {/* Hiển thị thông tin tiền thưởng */}
-            <div className={Style.convertInfo}>
-              <div className={Style.infoItem}>
-                <label>Tiền thưởng khi chuyển đổi:</label>
-                <span className={Style.amount}>+100,000 VNĐ</span>
-              </div>
-              <div className={Style.infoNote}>
-                <small>* Mỗi học viên tiềm năng được chuyển đổi thành học viên sẽ được cộng 100,000 VNĐ vào doanh thu chiến dịch.</small>
+            {/* Form chọn khóa học */}
+            <div className={Style.formGroup} style={{marginBottom: '20px', marginTop: '20px'}}>
+              <label style={{display: 'block', marginBottom: '8px', fontWeight: 600, color: '#dee2e6'}}>
+                Chọn khóa học: <span style={{color: '#ef4444'}}>*</span>
+              </label>
+              <select
+                value={selectedCourseId || ''}
+                onChange={(e) => setSelectedCourseId(e.target.value ? Number(e.target.value) : null)}
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  background: '#313a46',
+                  border: '1px solid #404954',
+                  borderRadius: '6px',
+                  color: '#dee2e6',
+                  fontSize: '0.875rem'
+                }}
+                required
+              >
+                <option value="">-- Chọn khóa học --</option>
+                {courses.map(course => (
+                  <option key={course.id} value={course.id}>
+                    {course.name} {course.price ? `- ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(course.price)}` : ''}
+                  </option>
+                ))}
+              </select>
+              <div style={{fontSize: '0.75rem', color: '#8391a2', marginTop: '8px'}}>
+                <small>* Doanh thu sẽ được tính từ giá khóa học đã chọn</small>
               </div>
             </div>
 
@@ -703,10 +792,18 @@ const Page = () => {
               <button 
                 className={Style.convertButton}
                 onClick={async () => {
+                  if (!selectedCourseId) {
+                    toast.error("Vui lòng chọn khóa học trước khi chuyển đổi!", {
+                      duration: 3000,
+                      position: "top-center"
+                    });
+                    return;
+                  }
+                  
                   try {
                     toast.loading("Đang chuyển đổi học viên tiềm năng...", { id: "convert-lead" });
                     
-                    const response = await leadService.convertLead(selectedLead.id);
+                    const response = await leadService.convertLead(selectedLead.id, { courseId: selectedCourseId });
                     
                     // Kiểm tra lỗi từ response
                     if (response && (response.code >= 400 || response.error || response.status >= 400)) {
@@ -719,14 +816,18 @@ const Page = () => {
                       return;
                     }
                     
-                    toast.success(`Đã chuyển đổi ${selectedLead?.fullName || selectedLead?.HoTen} thành học viên chính thức! (+100,000 VNĐ)`, {
+                    const selectedCourse = courses.find(c => c.id === selectedCourseId);
+                    const coursePrice = selectedCourse?.price ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(selectedCourse.price) : '';
+                    
+                    toast.success(`Đã chuyển đổi ${selectedLead?.fullName || selectedLead?.HoTen} thành học viên chính thức! ${coursePrice ? `(Khóa học: ${selectedCourse.name})` : ''}`, {
                       id: "convert-lead",
                       duration: 4000,
                       position: "top-center"
                     });
                     
                     setShowConvertModal(false);
-                    fetchLeads(currentPage, itemsPerPage, nameFilter, statusFilter);
+                    setSelectedCourseId(null);
+                    fetchLeads(currentPage, itemsPerPage, nameFilter, statusFilter, campaignNameFilter);
                   } catch (err) {
                     console.error("Error converting lead:", err);
                     const errorMessage = getErrorMessage(err, "Không thể chuyển đổi học viên tiềm năng. Vui lòng thử lại!");
@@ -742,7 +843,10 @@ const Page = () => {
               </button>
               <button 
                 className={Style.cancelButton}
-                onClick={() => setShowConvertModal(false)}
+                onClick={() => {
+                  setShowConvertModal(false);
+                  setSelectedCourseId(null);
+                }}
               >
                 Hủy
               </button>
