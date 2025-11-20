@@ -20,19 +20,22 @@ const RevenuePage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [exporting, setExporting] = useState(false);
-  const [dateRange, setDateRange] = useState({
-    startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 ngày trước
-    endDate: new Date().toISOString().split('T')[0] // Hôm nay
+  const [period, setPeriod] = useState('day'); // 'day', 'week', 'month'
+  const [dateRange, setDateRange] = useState(() => {
+    const today = new Date();
+    const endDate = today.toISOString().split('T')[0];
+    const startDate = new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // 7 ngày gần nhất
+    return { startDate, endDate };
   });
 
   useEffect(() => {
     fetchStatistics();
-  }, [dateRange]);
+  }, [dateRange, period]);
 
   const fetchStatistics = async () => {
     try {
       setLoading(true);
-      const response = await statisticService.getRevenue(dateRange.startDate, dateRange.endDate);
+      const response = await statisticService.getRevenue(dateRange.startDate, dateRange.endDate, period);
       
       // Kiểm tra lỗi từ response
       if (response && (response.code >= 400 || response.error || response.status >= 400)) {
@@ -68,6 +71,27 @@ const RevenuePage = () => {
       ...prev,
       [field]: value
     }));
+  };
+
+  const handlePeriodChange = (newPeriod) => {
+    setPeriod(newPeriod);
+    // Tự động điều chỉnh date range dựa trên period
+    const today = new Date();
+    const endDate = today.toISOString().split('T')[0];
+    let startDate;
+    
+    if (newPeriod === 'day') {
+      // 7 ngày gần nhất (bao gồm hôm nay)
+      startDate = new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    } else if (newPeriod === 'week') {
+      // 4 tuần gần nhất (28 ngày)
+      startDate = new Date(Date.now() - 27 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    } else if (newPeriod === 'month') {
+      // 12 tháng gần nhất
+      startDate = new Date(today.getFullYear(), today.getMonth() - 11, 1).toISOString().split('T')[0];
+    }
+    
+    setDateRange({ startDate, endDate });
   };
 
   const handleExport = async () => {
@@ -145,6 +169,29 @@ const RevenuePage = () => {
       <div className={styles.header}>
         <h1>Báo cáo Doanh thu</h1>
         <div className={styles.dateFilter}>
+          <div className={styles.periodSelector}>
+            <label>Hiển thị theo:</label>
+            <div className={styles.periodButtons}>
+              <button
+                className={`${styles.periodButton} ${period === 'day' ? styles.active : ''}`}
+                onClick={() => handlePeriodChange('day')}
+              >
+                Theo ngày
+              </button>
+              <button
+                className={`${styles.periodButton} ${period === 'week' ? styles.active : ''}`}
+                onClick={() => handlePeriodChange('week')}
+              >
+                Theo tuần
+              </button>
+              <button
+                className={`${styles.periodButton} ${period === 'month' ? styles.active : ''}`}
+                onClick={() => handlePeriodChange('month')}
+              >
+                Theo tháng
+              </button>
+            </div>
+          </div>
           <div className={styles.dateGroup}>
             <label>Từ ngày:</label>
             <input
@@ -295,57 +342,75 @@ const RevenuePage = () => {
             <p>Khoảng thời gian: {dateRange.startDate} đến {dateRange.endDate}</p>
           </div>
           <div className={styles.rechartsContainer}>
-            <ResponsiveContainer width="100%" height={400}>
+            <ResponsiveContainer width="100%" height={360}>
               <BarChart
                 data={statistics?.data?.revenueData?.map(item => ({
-                  date: new Date(item.date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }),
-                  enrollments: item.enrollments || 0,
+                  date: item.date,
                   revenue: item.revenue || 0
                 })) || [
-                  { date: '01/01', enrollments: 15, revenue: 2500000 },
-                  { date: '01/02', enrollments: 18, revenue: 3000000 },
-                  { date: '01/03', enrollments: 21, revenue: 3500000 },
-                  { date: '01/04', enrollments: 24, revenue: 4000000 },
-                  { date: '01/05', enrollments: 27, revenue: 4500000 }
+                  { date: '01/01', revenue: 2500000 },
+                  { date: '01/02', revenue: 3000000 },
+                  { date: '01/03', revenue: 3500000 },
+                  { date: '01/04', revenue: 4000000 },
+                  { date: '01/05', revenue: 4500000 }
                 ]}
-                margin={{
-                  top: 5,
-                  right: 30,
-                  left: 20,
-                  bottom: 5,
-                }}
+                margin={{ top: 10, right: 30, left: 20, bottom: 5 }}
               >
                 <XAxis dataKey="date" />
-                <YAxis 
-                  yAxisId="left"
-                  orientation="left"
-                  stroke="#8884d8"
-                />
-                <YAxis 
-                  yAxisId="right"
-                  orientation="right"
-                  stroke="#82ca9d"
+                <YAxis
                   tickFormatter={(value) => new Intl.NumberFormat('vi-VN', {
                     style: 'currency',
                     currency: 'VND',
                     notation: 'compact'
                   }).format(Number(value))}
+                  stroke="#82ca9d"
                 />
-                <Tooltip 
+                <Tooltip
                   contentStyle={{background:"#151c2c", border:"none", color: "white"}}
-                  formatter={(value, name) => {
-                    if (name === 'Doanh thu') {
-                      return [new Intl.NumberFormat('vi-VN', {
-                        style: 'currency',
-                        currency: 'VND'
-                      }).format(Number(value)), name];
-                    }
-                    return [value, name];
-                  }}
+                  formatter={(value) => new Intl.NumberFormat('vi-VN', {
+                    style: 'currency',
+                    currency: 'VND'
+                  }).format(Number(value))}
+                  labelFormatter={(label) => `Thời gian: ${label}`}
                 />
                 <Legend />
-                <Bar yAxisId="left" dataKey="enrollments" fill="#8884d8" name="Số đăng ký" />
-                <Bar yAxisId="right" dataKey="revenue" fill="#82ca9d" name="Doanh thu" />
+                <Bar dataKey="revenue" fill="#82ca9d" name="Doanh thu" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Biểu đồ Bar - Số đăng ký theo Thời gian */}
+        <div className={styles.chartCard}>
+          <h2>Biểu đồ Cột - Số đăng ký theo Thời gian</h2>
+          <div className={styles.debugInfo}>
+            <p>Dữ liệu: {statistics?.data?.revenueData?.length || 0} điểm dữ liệu</p>
+            <p>Khoảng thời gian: {dateRange.startDate} đến {dateRange.endDate}</p>
+          </div>
+          <div className={styles.rechartsContainer}>
+            <ResponsiveContainer width="100%" height={360}>
+              <BarChart
+                data={statistics?.data?.revenueData?.map(item => ({
+                  date: item.date,
+                  enrollments: item.enrollments || 0
+                })) || [
+                  { date: '01/01', enrollments: 15 },
+                  { date: '01/02', enrollments: 18 },
+                  { date: '01/03', enrollments: 21 },
+                  { date: '01/04', enrollments: 24 },
+                  { date: '01/05', enrollments: 27 }
+                ]}
+                margin={{ top: 10, right: 30, left: 20, bottom: 5 }}
+              >
+                <XAxis dataKey="date" />
+                <YAxis stroke="#8884d8" allowDecimals={false} />
+                <Tooltip
+                  contentStyle={{background:"#151c2c", border:"none", color: "white"}}
+                  formatter={(value) => [`${value}`, 'Số đăng ký']}
+                  labelFormatter={(label) => `Thời gian: ${label}`}
+                />
+                <Legend />
+                <Bar dataKey="enrollments" fill="#8884d8" name="Số đăng ký" />
               </BarChart>
             </ResponsiveContainer>
           </div>

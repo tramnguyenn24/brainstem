@@ -34,7 +34,8 @@ function buildQueryBuilder(query) {
   
   // Tìm kiếm theo tên chiến dịch
   if (campaignName) {
-    const campaignRepo = AppDataSource.getRepository('Campaign');
+    // Dùng innerJoin để chỉ lấy students có campaign và tên campaign khớp
+    // TypeORM sẽ tự động map property name sang column name
     qb.innerJoin('campaigns', 'camp', 'camp.id = student.campaignId');
     const q = String(campaignName).toLowerCase();
     qb.andWhere('LOWER(camp.name) LIKE :campaignName', { campaignName: `%${q}%` });
@@ -110,7 +111,9 @@ exports.getStudents = async (req, res) => {
   const students = await qb.getMany();
   const items = await Promise.all(students.map(toEnrichedStudent));
   
-  res.json({ page: pageNum, size: pageSize, totalItems, totalPages: Math.ceil(totalItems / pageSize), items });
+  // Đảm bảo totalPages luôn >= 1 (kể cả khi không có dữ liệu)
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  res.json({ page: pageNum, size: pageSize, totalItems, totalPages, items });
 };
 
 exports.getStudentSummary = async (req, res) => {

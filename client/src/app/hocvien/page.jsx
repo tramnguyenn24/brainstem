@@ -189,7 +189,7 @@ const Page = () => {
         // Lưu metadata để sử dụng cho phân trang
         if (response.page !== undefined) {
           setMetadata({
-            page: response.page - 1, // Convert to 0-based for pagination component
+            page: response.page, // Backend trả về 1-based, giữ nguyên
             totalPages: response.totalPages,
             count: response.items.length,
             totalElements: response.totalItems
@@ -201,7 +201,7 @@ const Page = () => {
         // Fallback if API returns array directly
         setStudents(response);
         setMetadata({
-          page: 0,
+          page: 1,
           totalPages: 1,
           count: response.length,
           totalElements: response.length
@@ -491,22 +491,6 @@ const Page = () => {
             </Link>
         </div>
       
-        {/* Hiển thị kết quả tìm kiếm */}
-        {(searchFilter || campaignNameFilter) && (
-          <div className={Style.searchInfo}>
-            {searchFilter && (
-              <span>Kết quả tìm kiếm: <strong>{searchFilter}</strong></span>
-            )}
-            {campaignNameFilter && (
-              <span>{searchFilter ? ' | ' : ''}Tên CD: <strong>{campaignNameFilter}</strong></span>
-            )}
-            <span> | Tìm thấy: <strong>{students.length}</strong> học viên</span>
-            {statusFilter && (
-              <span> | Trạng thái: <strong>{statusFilter}</strong></span>
-            )}
-          </div>
-        )}
-
         <table className={Style.table}>
           <thead>
             <tr>
@@ -520,56 +504,64 @@ const Page = () => {
             </tr>
           </thead>
           <tbody>
-            {students.map((student) => (
-              <tr key={student.id}>
-                <td>
-                  <div className={Style.user}>
-                    {student.fullName}
-                  </div>
-                </td>
-                <td>{student.email || 'N/A'}</td>
-                <td>{student.phone || 'N/A'}</td>
-                <td>
-                  <span className={`${Style.status} ${student.status === 'active' ? Style.active : Style.inactive}`}>
-                    {student.status === 'active' ? 'Hoạt động' : student.status === 'inactive' ? 'Không hoạt động' : student.status || 'N/A'}
-                  </span>
-                </td>
-                <td>
-                  <span className={`${Style.status} ${student.enrollmentStatus === 'enrolled' ? Style.active : Style.inactive}`}>
-                    {student.enrollmentStatus === 'pending' ? 'Chờ xử lý' : student.enrollmentStatus === 'enrolled' ? 'Đã đăng ký' : student.enrollmentStatus === 'completed' ? 'Hoàn thành' : student.enrollmentStatus || 'N/A'}
-                  </span>
-                </td>
-                <td>{student.campaignName || 'N/A'}</td>
-                <td>
-                  <div className={Style.buttons}>
-                    <button 
-                      className={`${Style.button} ${Style.view}`}
-                      onClick={() => handleView(student)}
-                    >
-                      Xem
-                    </button>
-                    <button 
-                      className={`${Style.button} ${Style.edit}`}
-                      onClick={() => handleEdit(student)}
-                    >
-                      Sửa
-                    </button>
-                    <button 
-                      className={`${Style.button} ${Style.delete}`}
-                      onClick={() => handleDelete(student)}
-                    >
-                      Xóa
-                    </button>
-                  </div>
+            {students.length === 0 ? (
+              <tr>
+                <td colSpan={7} style={{ textAlign: 'center', padding: '20px', color: 'var(--textSoft)' }}>
+                  Không có dữ liệu học viên
                 </td>
               </tr>
-            ))}
+            ) : (
+              students.map((student) => (
+                <tr key={student.id}>
+                  <td>
+                    <div className={Style.user}>
+                      {student.fullName}
+                    </div>
+                  </td>
+                  <td>{student.email || 'N/A'}</td>
+                  <td>{student.phone || 'N/A'}</td>
+                  <td>
+                    <span className={`${Style.status} ${student.status === 'active' ? Style.active : Style.inactive}`}>
+                      {student.status === 'active' ? 'Hoạt động' : student.status === 'inactive' ? 'Không hoạt động' : student.status || 'N/A'}
+                    </span>
+                  </td>
+                  <td>
+                    <span className={`${Style.status} ${student.enrollmentStatus === 'enrolled' ? Style.active : Style.inactive}`}>
+                      {student.enrollmentStatus === 'pending' ? 'Chờ xử lý' : student.enrollmentStatus === 'enrolled' ? 'Đã đăng ký' : student.enrollmentStatus === 'completed' ? 'Hoàn thành' : student.enrollmentStatus || 'N/A'}
+                    </span>
+                  </td>
+                  <td>{student.campaignName || 'N/A'}</td>
+                  <td>
+                    <div className={Style.buttons}>
+                      <button 
+                        className={`${Style.button} ${Style.view}`}
+                        onClick={() => handleView(student)}
+                      >
+                        Xem
+                      </button>
+                      <button 
+                        className={`${Style.button} ${Style.edit}`}
+                        onClick={() => handleEdit(student)}
+                      >
+                        Sửa
+                      </button>
+                      <button 
+                        className={`${Style.button} ${Style.delete}`}
+                        onClick={() => handleDelete(student)}
+                      >
+                        Xóa
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       
         <div className={Style.darkBg}>
           <Suspense fallback={<div>Đang tải...</div>}>
-            <Pagination metadata={metadata || { page: 0, totalPages: 1, count: students.length, totalElements: students.length }} />
+            <Pagination metadata={metadata || { page: 1, totalPages: 1, count: students.length, totalElements: students.length }} />
           </Suspense>
         </div>
 

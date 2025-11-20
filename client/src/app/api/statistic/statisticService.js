@@ -3,11 +3,12 @@ import { apiRequest } from '../../lib/api';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export const statisticService = {
-  getRevenue: async (startDate, endDate) => {
+  getRevenue: async (startDate, endDate, period = 'day') => {
     try {
       const params = new URLSearchParams();
       if (startDate) params.append('startDate', startDate);
       if (endDate) params.append('endDate', endDate);
+      if (period) params.append('period', period);
       
       const { data } = await apiRequest(`${API_BASE_URL}/api/statistics/revenue?${params.toString()}`, {
         method: 'GET'

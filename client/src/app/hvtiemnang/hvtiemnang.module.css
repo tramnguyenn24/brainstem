@@ -1,80 +1,143 @@
 .categoryy{
-  padding: 20px;
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #eee;
-}
-
-.header h1 {
-  margin: 0;
-  font-size: 24px;
-  color: white;
-}
-
-.addButton{
-  padding: 10px;
-  background-color: #5d57c9;
+  padding: 24px;
   color: var(--text);
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
+  min-height: 100vh;
+  background: var(--bg);
 }
 
 .container {
   background-color: var(--bgSoft);
-  padding: 20px;
-  border-radius: 10px;
-  margin-top: 20px;
+  border-radius: 16px;
+  padding: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .top {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.top h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.topRight {
+  display: flex;
+  flex: 1;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.searchGroup {
+  min-width: 260px;
+  flex: 1;
 }
 
 .addButton {
-  padding: 10px;
-  background-color: #5d57c9;
-  color: var(--text);
+  padding: 10px 18px;
+  background: linear-gradient(135deg, #6d5dfc, #a16dff);
+  color: #fff;
   border: none;
-  border-radius: 5px;
-  cursor: pointer;
+  border-radius: 999px;
+  font-weight: 600;
+  text-align: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.addButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(109, 93, 252, 0.45);
 }
 
 .table {
   width: 100%;
+  border-spacing: 0;
+  border-collapse: collapse;
+  background: var(--bg);
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.table td {
-  padding: 10px;
+.table thead {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.table thead td {
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--textSoft);
+  padding: 16px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.table tbody td {
+  padding: 16px 18px;
+  font-size: 14px;
+  color: var(--text);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  vertical-align: middle;
+}
+
+.table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .buttons {
   display: flex;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
 .button {
-  padding: 5px 10px;
-  border-radius: 5px;
-  color: var(--text);
+  padding: 8px 14px;
+  border-radius: 999px;
   border: none;
   cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+}
+
+.view {
+  background: rgba(93, 87, 201, 0.15);
+  color: #a5b4fc;
 }
 
 .edit {
-  background-color: teal;
+  background: rgba(16, 185, 129, 0.15);
+  color: #6ee7b7;
+}
+
+.convert {
+  background: rgba(59, 130, 246, 0.18);
+  color: #93c5fd;
 }
 
 .delete {
-  background-color: crimson;
+  background: rgba(239, 68, 68, 0.18);
+  color: #fca5a5;
 }
 
 .modalOverlay {
@@ -255,8 +318,10 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
+  min-height: 60vh;
   color: var(--text);
+  font-size: 16px;
+  letter-spacing: 0.04em;
 }
 
 .error {
@@ -266,37 +331,6 @@
   background-color: var(--bgSoft);
   border-radius: 5px;
   margin: 20px 0;
-}
-
-.topRight {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  flex-wrap: wrap;
-  flex: 1;
-  justify-content: flex-end;
-}
-
-.searchGroup {
-  flex: 1;
-  min-width: 250px;
-  max-width: 400px;
-}
-
-.top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  flex-wrap: wrap;
-  margin-bottom: 20px;
-}
-
-.top h1 {
-  margin: 0;
-  font-size: 24px;
-  color: var(--text);
-  white-space: nowrap;
 }
 
 /* Search styles */
@@ -330,9 +364,7 @@
 
 /* Table styles */
 .table thead td {
-
-  color: #FFFFFF;
- 
+  color: var(--textSoft);
 }
 
 /* Pagination styles */
@@ -391,31 +423,29 @@
   color: var(--text);
 }
 
-.view {
-  background-color: #5d57c9;
-}
-
 .searchInfo {
   margin: 10px 0;
-  padding: 10px;
-  background-color: #f8f9fa;
-  border-radius: 4px;
-  color: #495057;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 10px;
+  color: var(--textSoft);
   font-size: 14px;
   display: flex;
-  align-items: center;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  flex-wrap: wrap;
+  gap: 8px;
+  border: 1px dashed rgba(255, 255, 255, 0.1);
 }
 
 .searchInfo strong {
-  color: #0066cc;
-  margin: 0 5px;
+  color: #a5b4fc;
 }
 
 .darkBg {
   padding: 20px;
-  border-radius: 8px;
-  margin-top: 20px;
+  border-radius: 12px;
+  margin-top: 10px;
+  background: rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 /* Add these status styles at the end of the file */
@@ -448,6 +478,12 @@
   border: 1px solid #B8860B;
 }
 
+.newStatus {
+  background-color: rgba(125, 211, 252, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(14, 165, 233, 0.6);
+}
+
 .contacted {
   background-color: rgba(33, 150, 243, 0.1);
   color: #000080;
@@ -478,28 +514,21 @@
   border: 1px solid #696969;
 }
 
-/* Convert button style */
-.convert {
-  background-color: #32CD32;
-  color: white;
-}
-
-.convert:hover {
-  background-color: #228B22;
-}
-
+/* Convert action buttons */
 .convertButton {
-  background-color: #32CD32;
-  color: white;
-  padding: 10px 20px;
+  background: linear-gradient(135deg, #22c55e, #4ade80);
+  color: #0f172a;
+  padding: 10px 22px;
   border: none;
-  border-radius: 5px;
+  border-radius: 999px;
   cursor: pointer;
-  font-weight: bold;
+  font-weight: 700;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .convertButton:hover {
-  background-color: #228B22;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(34, 197, 94, 0.35);
 }
 
 .imageContainer {

@@ -188,7 +188,7 @@ const Dashboard = () => {
           onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-5px)'}
           onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
           >
-            <div style={{fontSize: '0.8125rem', color: 'rgba(255,255,255,0.9)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600}}>Tổng Doanh Thu</div>
+            <div style={{fontSize: '0.8125rem', color: 'rgba(255,255,255,0.9)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600}}>Tổng Doanh Thu Theo Tháng</div>
             <div style={{fontSize: '2.5rem', fontWeight: 700, marginBottom: 8, color: '#fff'}}>
               {summary.totalRevenue?.formatted || formatCurrency(totalRevenue)}
             </div>

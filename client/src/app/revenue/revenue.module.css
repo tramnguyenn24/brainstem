@@ -27,6 +27,48 @@
 .dateFilter {
   display: flex;
   gap: 1rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.periodSelector {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.periodSelector label {
+  color: var(--font--color);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.periodButtons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.periodButton {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--icons-color);
+  border-radius: 8px;
+  background: rgba(35, 35, 37, 0.8);
+  color: var(--font--color);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.periodButton:hover {
+  background: rgba(55, 55, 57, 0.9);
+  border-color: var(--icons-color);
+}
+
+.periodButton.active {
+  background: var(--icons-color);
+  color: var(--main-bg-color);
+  border-color: var(--icons-color);
+  font-weight: 600;
 }
 
 .dateGroup {

@@ -20,8 +20,8 @@ const Pagination = ({ metadata }) => {
   // Lấy thông tin phân trang từ metadata
   const { page, totalPages, count, totalElements } = metadata;
   
-  // API page index bắt đầu từ 0, nhưng UI hiển thị từ 1
-  const currentPage = parseInt(page) + 1;
+  // Backend và URL đều dùng 1-based, không cần convert
+  const currentPage = parseInt(page) || 1;
   const params = new URLSearchParams(searchParams);
 
   console.log("Current Page:", currentPage, "Total Pages:", totalPages);
@@ -31,8 +31,8 @@ const Pagination = ({ metadata }) => {
 
   // Hàm xử lý khi chuyển trang
   const handleChangePage = (newPage) => {
-    // Chuyển đổi số trang từ UI (bắt đầu từ 1) sang API (bắt đầu từ 0)
-    params.set("page", newPage - 1);
+    // URL và Backend đều dùng 1-based, giữ nguyên
+    params.set("page", newPage);
     replace(`${pathname}?${params}`);
   };
 

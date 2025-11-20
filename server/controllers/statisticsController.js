@@ -3,7 +3,7 @@ const { AppDataSource } = require('../db/data-source');
 // Get revenue statistics
 exports.getRevenue = async (req, res) => {
   try {
-    const { startDate, endDate } = req.query;
+    const { startDate, endDate, period = 'day' } = req.query; // period: 'day', 'week', 'month'
     
     // Parse dates
     const start = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -36,34 +36,109 @@ exports.getRevenue = async (req, res) => {
     const totalCampaigns = campaigns.length;
     const totalPotentialStudents = leads.length;
     
-    // Calculate revenue data (mock for now - you may need to add revenue field to students/campaigns)
+    // Calculate revenue data grouped by period (day/week/month)
     const revenueData = [];
-    const daysDiff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+    const courseRepo = AppDataSource.getRepository('Course');
     
-    for (let i = 0; i < daysDiff; i++) {
-      const date = new Date(start);
-      date.setDate(date.getDate() + i);
-      const dateStr = date.toISOString().split('T')[0];
+    // Helper function to get period key based on period type
+    const getPeriodKey = (date, periodType) => {
+      const d = new Date(date);
+      if (periodType === 'day') {
+        return d.toISOString().split('T')[0]; // YYYY-MM-DD
+      } else if (periodType === 'week') {
+        // Get week number (ISO week)
+        const year = d.getFullYear();
+        const oneJan = new Date(year, 0, 1);
+        const numberOfDays = Math.floor((d - oneJan) / (24 * 60 * 60 * 1000));
+        const week = Math.ceil((numberOfDays + oneJan.getDay() + 1) / 7);
+        return `${year}-W${week.toString().padStart(2, '0')}`;
+      } else if (periodType === 'month') {
+        return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`; // YYYY-MM
+      }
+      return d.toISOString().split('T')[0];
+    };
+    
+    // Helper to generate all keys between start/end for consistent chart data
+    const generatePeriodKeys = (startDate, endDate, periodType) => {
+      const keys = [];
+      const current = new Date(startDate);
+      const endCursor = new Date(endDate);
       
-      // Count enrollments for this date
-      const enrollments = filteredStudents.filter(s => {
-        const sDate = new Date(s.createdAt).toISOString().split('T')[0];
-        return sDate === dateStr;
-      }).length;
+      current.setHours(0, 0, 0, 0);
+      endCursor.setHours(0, 0, 0, 0);
       
-      // Mock revenue (you may need to add actual revenue calculation)
-      const revenue = enrollments * 1000000; // 1M VND per enrollment
+      while (current <= endCursor) {
+        keys.push(getPeriodKey(current, periodType));
+        
+        if (periodType === 'day') {
+          current.setDate(current.getDate() + 1);
+        } else if (periodType === 'week') {
+          current.setDate(current.getDate() + 7);
+        } else if (periodType === 'month') {
+          current.setMonth(current.getMonth() + 1, 1);
+        } else {
+          current.setDate(current.getDate() + 1);
+        }
+      }
       
+      return keys;
+    };
+    
+    // Helper function to format period label
+    const formatPeriodLabel = (periodKey, periodType) => {
+      if (periodType === 'day') {
+        const d = new Date(periodKey);
+        return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+      } else if (periodType === 'week') {
+        return periodKey.replace('W', ' Tuần ');
+      } else if (periodType === 'month') {
+        const [year, month] = periodKey.split('-');
+        return `${month}/${year}`;
+      }
+      return periodKey;
+    };
+    
+    // Group students by period
+    const periodMap = new Map();
+    
+    for (const student of filteredStudents) {
+      const studentDate = new Date(student.createdAt);
+      const periodKey = getPeriodKey(studentDate, period);
+      
+      if (!periodMap.has(periodKey)) {
+        periodMap.set(periodKey, {
+          enrollments: 0,
+          revenue: 0,
+          date: periodKey
+        });
+      }
+      
+      const periodData = periodMap.get(periodKey);
+      periodData.enrollments += 1;
+      
+      // Calculate revenue from course price
+      if (student.courseId) {
+        const course = await courseRepo.findOne({ where: { id: student.courseId } });
+        if (course && course.price) {
+          periodData.revenue += Number(course.price) || 0;
+        }
+      }
+    }
+    
+    // Ensure all periods exist between start/end for consistent daily chart
+    const periodKeys = generatePeriodKeys(start, end, period);
+    
+    for (const periodKey of periodKeys) {
+      const data = periodMap.get(periodKey) || { enrollments: 0, revenue: 0 };
       revenueData.push({
-        date: dateStr,
-        enrollments,
-        revenue
+        date: formatPeriodLabel(periodKey, period),
+        enrollments: data.enrollments,
+        revenue: data.revenue
       });
     }
     
     // Calculate top campaigns by revenue
     const campaignRevenueMap = new Map();
-    const courseRepo = AppDataSource.getRepository('Course');
     
     // Tính doanh thu cho mỗi campaign
     for (const campaign of campaigns) {
@@ -395,10 +470,13 @@ exports.getDashboardStats = async (req, res) => {
     // Calculate total potential students (leads)
     const totalPotentialStudents = allLeads.length;
     
-    // Calculate total registered students
-    const totalRegisteredStudents = allStudents.filter(s => s.enrollmentStatus === 'enrolled').length;
+    // Calculate total registered students (chỉ đếm students được chuyển đổi từ leads)
+    const totalRegisteredStudents = allStudents.filter(s => 
+      s.enrollmentStatus === 'enrolled' && s.sourceLeadId != null
+    ).length;
     
     // Calculate conversion rate (leads to enrollment)
+    // Chỉ tính từ students được chuyển đổi từ leads
     const conversionRate = allLeads.length > 0
       ? (totalRegisteredStudents / allLeads.length * 100).toFixed(2)
       : 0;

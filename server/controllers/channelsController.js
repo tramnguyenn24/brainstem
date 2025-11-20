@@ -267,11 +267,14 @@ exports.getChannelsWithStats = async (req, res) => {
     const enrichedChannels = await Promise.all(list.map(async (channel) => {
       const students = await studentRepo.find({ where: { channelId: channel.id } });
       const studentsCount = students.length;
+      // Chỉ đếm students được chuyển đổi từ leads (có sourceLeadId)
+      const convertedStudentsCount = students.filter(s => s.sourceLeadId != null).length;
       const newStudentsCount = students.filter(s => s.newStudent === true).length;
       const leadsCount = (await leadRepo.find({ where: { channelId: channel.id } })).length;
       
       // Tính tỷ lệ chuyển đổi (leads → học viên)
-      const conversionRate = leadsCount > 0 ? ((studentsCount / leadsCount) * 100).toFixed(2) : 0;
+      // Chỉ tính từ students được chuyển đổi từ leads
+      const conversionRate = leadsCount > 0 ? ((convertedStudentsCount / leadsCount) * 100).toFixed(2) : 0;
       
       let revenue = 0;
       for (const student of students) {

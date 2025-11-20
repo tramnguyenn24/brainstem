@@ -319,7 +319,10 @@ const Page = () => {
 
   // Function để lấy class CSS cho trạng thái
   const getStatusClass = (status) => {
-    switch (status) {
+    const normalized = (status || '').toUpperCase();
+    switch (normalized) {
+      case 'NEW':
+        return Style.newStatus;
       case 'INTERESTED':
         return Style.interested;
       case 'CONTACTED':
@@ -332,6 +335,26 @@ const Page = () => {
         return Style.lost;
       default:
         return Style.default;
+    }
+  };
+
+  const getStatusLabel = (status) => {
+    const normalized = (status || '').toUpperCase();
+    switch (normalized) {
+      case 'NEW':
+        return 'Mới';
+      case 'INTERESTED':
+        return 'Quan tâm';
+      case 'CONTACTED':
+        return 'Đã liên hệ';
+      case 'QUALIFIED':
+        return 'Đủ điều kiện';
+      case 'CONVERTED':
+        return 'Đã chuyển đổi';
+      case 'LOST':
+        return 'Mất liên lạc';
+      default:
+        return status || 'N/A';
     }
   };
 
@@ -533,7 +556,7 @@ const Page = () => {
                   <td>{lead.gender || lead.GioiTinh || 'N/A'}</td>
                   <td>
                     <span className={`${Style.status} ${getStatusClass(lead.status || lead.TrangThai)}`}>
-                      {lead.status === 'new' ? 'Mới' : lead.status === 'contacted' ? 'Đã liên hệ' : lead.status === 'qualified' ? 'Đủ điều kiện' : lead.status === 'converted' ? 'Đã chuyển đổi' : lead.status === 'lost' ? 'Mất liên lạc' : lead.status || lead.TrangThai || 'N/A'}
+                      {getStatusLabel(lead.status || lead.TrangThai)}
                     </span>
                   </td>
                   <td>{lead.campaignName || 'N/A'}</td>
@@ -726,7 +749,7 @@ const Page = () => {
               <div className={Style.detailItem}>
                 <label>Trạng thái:</label>
                 <span className={`${Style.status} ${getStatusClass(selectedLead?.TrangThai)}`}>
-                  {selectedLead?.TrangThai}
+                  {getStatusLabel(selectedLead?.TrangThai)}
                 </span>
               </div>
               <div className={Style.detailItem}>

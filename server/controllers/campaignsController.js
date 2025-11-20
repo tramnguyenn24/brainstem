@@ -19,8 +19,9 @@ async function calculateCampaignMetrics(campaignId) {
   // Lấy tất cả students của chiến dịch
   const students = await studentRepo.find({ where: { campaignId } });
   
-  // Đếm số HV mới (new_student = true)
-  const newStudents = students.filter(s => s.newStudent === true);
+  // Đếm số HV mới được chuyển đổi từ leads (new_student = true và có sourceLeadId)
+  // Chỉ tính students được chuyển đổi từ leads để tỷ lệ chuyển đổi không vượt quá 100%
+  const newStudents = students.filter(s => s.newStudent === true && s.sourceLeadId != null);
   const newStudentsCount = newStudents.length;
   
   // Tính doanh thu từ khóa học
