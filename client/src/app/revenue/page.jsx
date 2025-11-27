@@ -21,6 +21,7 @@ const RevenuePage = () => {
   const [error, setError] = useState(null);
   const [exporting, setExporting] = useState(false);
   const [period, setPeriod] = useState('day'); // 'day', 'week', 'month'
+  const [campaignSortOrder, setCampaignSortOrder] = useState('desc'); // 'desc' (cao->thấp) | 'asc' (thấp->cao)
   const [dateRange, setDateRange] = useState(() => {
     const today = new Date();
     const endDate = today.toISOString().split('T')[0];
@@ -100,7 +101,6 @@ const RevenuePage = () => {
       toast.loading("Đang xuất báo cáo...", { id: "export-report" });
       
       const result = await statisticService.downloadRevenueExport(dateRange.startDate, dateRange.endDate);
-      
       // Kiểm tra lỗi từ response
       if (result && (result.code >= 400 || result.error || result.status >= 400)) {
         const errorMessage = getErrorMessage(result, "Không thể xuất báo cáo");
@@ -111,7 +111,6 @@ const RevenuePage = () => {
         });
         return;
       }
-      
       // Thông báo thành công
       toast.success(`Xuất báo cáo thành công: ${result.filename}`, {
         id: "export-report",
@@ -130,7 +129,6 @@ const RevenuePage = () => {
       setExporting(false);
     }
   };
-
   if (loading) {
     return (
       <div className={styles.container}>
@@ -298,40 +296,77 @@ const RevenuePage = () => {
 
       {/* Charts */}
       <div className={styles.chartsContainer}>
-        {/* Biểu đồ Pie - Phân bổ Doanh thu theo Chiến dịch */}
+        {/* Biểu đồ Cột - Doanh thu theo Chiến dịch */}
         <div className={styles.chartCard}>
-          <h2>Biểu đồ Tròn - Phân bổ Doanh thu theo Chiến dịch</h2>
-          <div className={styles.rechartsContainer}>
-            <ResponsiveContainer width="100%" height={400}>
-              <PieChart>
-                <Pie
-                  data={statistics?.data?.topCampaigns?.filter(c => c.revenue > 0).map(campaign => ({
-                    name: campaign.name,
-                    value: campaign.revenue
-                  })) || []}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={120}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {(statistics?.data?.topCampaigns?.filter(c => c.revenue > 0) || []).map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'][index % 5]} />
-                  ))}
-                </Pie>
-                <Tooltip 
-                  contentStyle={{background:"#151c2c", border:"none", color: "white"}}
-                  formatter={(value) => new Intl.NumberFormat('vi-VN', {
-                    style: 'currency',
-                    currency: 'VND'
-                  }).format(Number(value))}
-                />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
+          <div className={styles.chartHeader}>
+            <h2>Biểu đồ Cột - Doanh thu theo Chiến dịch</h2>
+            <button
+              type="button"
+              className={styles.periodButton}
+              onClick={() => setCampaignSortOrder(campaignSortOrder === 'desc' ? 'asc' : 'desc')}
+            >
+              {campaignSortOrder === 'desc' ? 'Doanh thu cao → thấp' : 'Doanh thu thấp → cao'}
+            </button>
           </div>
+
+          {(() => {
+            const rawCampaigns = (statistics?.data?.topCampaigns || []).map(c => ({
+              name: c.name,
+              revenue: Number(c.revenue) || 0
+            }));
+
+            if (!rawCampaigns.length) {
+              return (
+                <div className={styles.noData}>
+                  Không có dữ liệu doanh thu theo chiến dịch trong khoảng thời gian đã chọn.
+                </div>
+              );
+            }
+
+            const hasPositive = rawCampaigns.some(c => c.revenue > 0);
+            const campaignData = (hasPositive ? rawCampaigns.filter(c => c.revenue > 0) : rawCampaigns)
+              .sort((a, b) =>
+                campaignSortOrder === 'desc'
+                  ? b.revenue - a.revenue
+                  : a.revenue - b.revenue
+              );
+
+            return (
+              <div className={styles.rechartsContainer}>
+                <ResponsiveContainer width="100%" height={400}>
+                  <BarChart
+                    data={campaignData}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
+                  >
+                    <XAxis
+                      dataKey="name"
+                      angle={-20}
+                      textAnchor="end"
+                      interval={0}
+                    />
+                    <YAxis
+                      tickFormatter={(value) => new Intl.NumberFormat('vi-VN', {
+                        style: 'currency',
+                        currency: 'VND',
+                        notation: 'compact'
+                      }).format(Number(value))}
+                      stroke="#82ca9d"
+                    />
+                    <Tooltip
+                      contentStyle={{ background: "#151c2c", border: "none", color: "white" }}
+                      formatter={(value) => new Intl.NumberFormat('vi-VN', {
+                        style: 'currency',
+                        currency: 'VND'
+                      }).format(Number(value))}
+                      labelFormatter={(label) => `Chiến dịch: ${label}`}
+                    />
+                    <Legend />
+                    <Bar dataKey="revenue" fill="#82ca9d" name="Doanh thu (VNĐ)" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            );
+          })()}
         </div>
 
         {/* Biểu đồ Bar - Doanh thu theo Thời gian */}

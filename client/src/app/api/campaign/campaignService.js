@@ -12,6 +12,8 @@ const buildQueryString = (options = {}) => {
     status,
     channel,
     channelId,
+    startDate,
+    endDate,
     sortBy = 'name',
     sortDirection = 'asc'
   } = options;
@@ -25,6 +27,8 @@ const buildQueryString = (options = {}) => {
   if (status) params.append('status', status);
   if (channel) params.append('channel', channel);
   if (channelId) params.append('channelId', channelId.toString());
+  if (startDate) params.append('startDate', startDate);
+  if (endDate) params.append('endDate', endDate);
   if (sortBy) params.append('sortBy', sortBy);
   if (sortDirection) params.append('sortDirection', sortDirection);
 
@@ -45,9 +49,18 @@ export const campaignService = {
     }
   },
 
-  getCampaignSummary: async () => {
+  getCampaignSummary: async (options = {}) => {
     try {
-      const { data } = await apiRequest(`${API_BASE_URL}/api/campaigns/summary`, {
+      const params = new URLSearchParams();
+      if (options.startDate) params.append('startDate', options.startDate);
+      if (options.endDate) params.append('endDate', options.endDate);
+
+      const query = params.toString();
+      const url = query 
+        ? `${API_BASE_URL}/api/campaigns/summary?${query}` 
+        : `${API_BASE_URL}/api/campaigns/summary`;
+
+      const { data } = await apiRequest(url, {
         method: 'GET'
       });
       return data;

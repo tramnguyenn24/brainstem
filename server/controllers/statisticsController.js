@@ -138,32 +138,27 @@ exports.getRevenue = async (req, res) => {
     }
     
     // Calculate top campaigns by revenue
+    // LƯU Ý: phải tôn trọng bộ lọc thời gian (startDate, endDate)
+    // nên chỉ dùng các student trong filteredStudents (đã được lọc theo createdAt)
     const campaignRevenueMap = new Map();
     
-    // Tính doanh thu cho mỗi campaign
     for (const campaign of campaigns) {
       let revenue = 0;
       
-      // Ưu tiên dùng campaign.revenue nếu có
-      if (campaign.revenue) {
-        revenue = Number(campaign.revenue);
-      } else {
-        // Tính từ students trong campaign
-        // Lấy tất cả students của campaign (không filter thời gian để có tổng doanh thu chính xác)
-        const campaignStudents = students.filter(s => s.campaignId === campaign.id);
-        
-        for (const student of campaignStudents) {
-          // Nếu student có courseId, lấy giá từ course
-          if (student.courseId) {
-            const course = await courseRepo.findOne({ where: { id: student.courseId } });
-            if (course && course.price) {
-              revenue += Number(course.price) || 0;
-            }
+      // Chỉ lấy học viên của campaign trong khoảng thời gian đã lọc
+      const campaignStudents = filteredStudents.filter(s => s.campaignId === campaign.id);
+      
+      for (const student of campaignStudents) {
+        // Nếu student có courseId, lấy giá từ course
+        if (student.courseId) {
+          const course = await courseRepo.findOne({ where: { id: student.courseId } });
+          if (course && course.price) {
+            revenue += Number(course.price) || 0;
           }
-          // Hoặc dùng tuitionFee nếu có
-          if (student.tuitionFee) {
-            revenue += Number(student.tuitionFee) || 0;
-          }
+        }
+        // Hoặc dùng tuitionFee nếu có
+        if (student.tuitionFee) {
+          revenue += Number(student.tuitionFee) || 0;
         }
       }
       
@@ -180,13 +175,16 @@ exports.getRevenue = async (req, res) => {
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 5);
     
-    // Calculate total revenue and orders
+    // Calculate total revenue and orders (theo bộ lọc thời gian)
     const totalRevenueFromCampaigns = Array.from(campaignRevenueMap.values())
       .reduce((sum, item) => sum + item.revenue, 0);
     
     const statisticTotal = {
       countOrder: filteredStudents.length,
-      countRevenue: totalRevenueFromCampaigns || revenueData.reduce((sum, item) => sum + item.revenue, 0)
+      // Nếu vì lý do nào đó không tính được theo campaign thì fallback về cộng trực tiếp từ revenueData
+      countRevenue: totalRevenueFromCampaigns > 0
+        ? totalRevenueFromCampaigns
+        : revenueData.reduce((sum, item) => sum + item.revenue, 0)
     };
     
     res.json({

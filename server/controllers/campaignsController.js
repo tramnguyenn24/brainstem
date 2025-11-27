@@ -198,6 +198,17 @@ exports.getCampaigns = async (req, res) => {
   const pageSize = Math.max(1, Number(size));
   
   const qb = buildQueryBuilder(req.query);
+
+  // Áp dụng bộ lọc thời gian nếu có (đảm bảo danh sách chiến dịch khớp với card thống kê)
+  const { startDate, endDate } = req.query;
+  if (startDate || endDate) {
+    if (startDate) {
+      qb.andWhere('campaign.createdAt >= :startDate', { startDate: new Date(startDate) });
+    }
+    if (endDate) {
+      qb.andWhere('campaign.createdAt <= :endDate', { endDate: new Date(endDate) });
+    }
+  }
   const totalItems = await qb.getCount();
   
   if (sortBy) {
@@ -286,8 +297,7 @@ async function calculateMonthMetrics(campaignId, monthStart, monthEnd) {
     const createdAt = new Date(l.createdAt);
     return createdAt >= monthStart && createdAt <= monthEnd;
   });
-  
-  // Calculate revenue
+  // Calculate revenue (chỉ tính học viên đã đăng ký khóa học)
   let revenue = 0;
   for (const student of monthStudents) {
     if (student.courseId) {
@@ -299,7 +309,10 @@ async function calculateMonthMetrics(campaignId, monthStart, monthEnd) {
   }
   
   // Count new students
-  const newStudents = monthStudents.filter(s => s.newStudent === true).length;
+  // Theo yêu cầu: "số học viên mới" của một tháng = số học viên đăng ký trong tháng đó,
+  // không phụ thuộc vào trạng thái new_student.
+  // Ở đây coi một học viên là "đã đăng ký" nếu đã tồn tại bản ghi student trong tháng.
+  const newStudents = monthStudents.length;
   
   return {
     revenue,

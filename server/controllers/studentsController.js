@@ -153,7 +153,8 @@ exports.getStudentSummary = async (req, res) => {
     const byStatus = {};
     const byEnrollment = {};
     const byCampaign = {};
-    let newStudentsCount = 0;
+    
+    const newStudentsCount = total;
     
     for (const s of items) {
       const st = s.status || 'active';
@@ -163,11 +164,6 @@ exports.getStudentSummary = async (req, res) => {
       const camp = s.campaignId ? await AppDataSource.getRepository('Campaign').findOne({ where: { id: s.campaignId } }) : null;
       const campName = camp ? camp.name : 'Unknown';
       byCampaign[campName] = (byCampaign[campName] || 0) + 1;
-      
-      // Đếm học viên mới trong khoảng thời gian
-      if (s.newStudent === true) {
-        newStudentsCount++;
-      }
     }
     
     // Trả về cả tổng số tất cả và tổng số trong khoảng thời gian

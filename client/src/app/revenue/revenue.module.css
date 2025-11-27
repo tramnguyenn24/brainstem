@@ -238,6 +238,30 @@
   text-align: center;
 }
 
+.chartHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.chartHeader h2 {
+  margin: 0;
+  text-align: left;
+}
+
+.sortButtons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.sortButtons .periodButton {
+  padding: 0.35rem 0.8rem;
+  font-size: 0.8rem;
+}
+
 .chartWrapper {
   position: relative;
   height: 400px;
@@ -601,6 +625,17 @@
 
 .rechartsContainer .recharts-legend-item-text {
   color: var(--font--color) !important;
+}
+
+.noData {
+  margin-top: 20px;
+  padding: 30px;
+  border-radius: 10px;
+  background: rgba(44, 62, 80, 0.2);
+  border: 1px dashed rgba(166, 161, 130, 0.5);
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+  font-size: 0.9rem;
 }
 
 /* Export Button Styles */

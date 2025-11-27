@@ -77,11 +77,10 @@ const Page = () => {
   useEffect(() => {
     const fetchSummary = async () => {
       try {
-        const params = new URLSearchParams();
-        if (startDateFilter) params.append('startDate', startDateFilter);
-        if (endDateFilter) params.append('endDate', endDateFilter);
-        
-        const response = await campaignService.getCampaignSummary();
+        const response = await campaignService.getCampaignSummary({
+          startDate: startDateFilter || undefined,
+          endDate: endDateFilter || undefined
+        });
         if (response) {
           setSummary(response);
         }
@@ -121,7 +120,16 @@ const Page = () => {
 
   // Effect khi trang hoặc bộ lọc thay đổi, gọi API để lấy dữ liệu
   useEffect(() => {
-    fetchCampaigns(currentPage, itemsPerPage, searchFilter, statusFilter, sortByFilter, sortDirectionFilter);
+    fetchCampaigns(
+      currentPage, 
+      itemsPerPage, 
+      searchFilter, 
+      statusFilter, 
+      sortByFilter, 
+      sortDirectionFilter,
+      startDateFilter,
+      endDateFilter
+    );
   }, [currentPage, itemsPerPage, searchFilter, statusFilter, startDateFilter, endDateFilter, sortByFilter, sortDirectionFilter]);
 
   useEffect(() => {
@@ -157,7 +165,16 @@ const Page = () => {
     replace(`${pathname}?${params}`);
   };
 
-  const fetchCampaigns = async (page, size, search = "", status = "", sortByParam = "", sortDirectionParam = "desc") => {
+  const fetchCampaigns = async (
+    page, 
+    size, 
+    search = "", 
+    status = "", 
+    sortByParam = "", 
+    sortDirectionParam = "desc",
+    startDateParam,
+    endDateParam
+  ) => {
     try {
       setLoading(true);
       const response = await campaignService.getCampaigns({ 
@@ -165,6 +182,8 @@ const Page = () => {
         size, 
         search, 
         status,
+        startDate: startDateParam || startDateFilter || undefined,
+        endDate: endDateParam || endDateFilter || undefined,
         sortBy: sortByParam || 'createdAt',
         sortDirection: sortDirectionParam || 'desc'
       });
@@ -339,7 +358,7 @@ const Page = () => {
       });
       
       setShowEditModal(false);
-      fetchCampaigns(currentPage, itemsPerPage, searchFilter, statusFilter);
+      fetchCampaigns(currentPage, itemsPerPage, searchFilter, statusFilter, sortByFilter, sortDirectionFilter, startDateFilter, endDateFilter);
     } catch (err) {
       console.error("Error updating campaign:", err);
       const errorMessage = getErrorMessage(err, "Không thể cập nhật chiến dịch. Vui lòng thử lại!");
@@ -380,7 +399,7 @@ const Page = () => {
       });
       
       setShowDeleteModal(false);
-      fetchCampaigns(currentPage, itemsPerPage, searchFilter, statusFilter);
+      fetchCampaigns(currentPage, itemsPerPage, searchFilter, statusFilter, sortByFilter, sortDirectionFilter, startDateFilter, endDateFilter);
     } catch (err) {
       console.error("Error deleting campaign:", err);
       const errorMessage = getErrorMessage(err, "Không thể xóa chiến dịch. Vui lòng thử lại!");
