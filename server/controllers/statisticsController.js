@@ -459,24 +459,37 @@ exports.getDashboardStats = async (req, res) => {
       ? ((currentStudying - prevStudying) / prevStudying * 100).toFixed(1)
       : currentStudying > 0 ? 100 : 0;
     
-    // Get running campaigns
-    const runningCampaigns = allCampaigns.filter(c => c.status === 'running');
+    // Get running campaigns (filtered by date range)
+    const runningCampaigns = allCampaigns.filter(c => {
+      const createdAt = new Date(c.createdAt);
+      return c.status === 'running' && createdAt >= start && createdAt <= end;
+    });
     
-    // Calculate total spent (from campaigns)
-    const totalSpent = allCampaigns.reduce((sum, c) => sum + (Number(c.cost) || 0), 0);
+    // Calculate total spent (from campaigns in date range)
+    const totalSpent = allCampaigns
+      .filter(c => {
+        const createdAt = new Date(c.createdAt);
+        return createdAt >= start && createdAt <= end;
+      })
+      .reduce((sum, c) => sum + (Number(c.cost) || 0), 0);
     
-    // Calculate total potential students (leads)
-    const totalPotentialStudents = allLeads.length;
+    // Calculate total potential students (leads in date range)
+    const totalPotentialStudents = allLeads.filter(l => {
+      const createdAt = new Date(l.createdAt);
+      return createdAt >= start && createdAt <= end;
+    }).length;
     
-    // Calculate total registered students (chỉ đếm students được chuyển đổi từ leads)
-    const totalRegisteredStudents = allStudents.filter(s => 
-      s.enrollmentStatus === 'enrolled' && s.sourceLeadId != null
-    ).length;
+    // Calculate total registered students (chỉ đếm students được chuyển đổi từ leads trong khoảng thời gian)
+    const totalRegisteredStudents = allStudents.filter(s => {
+      const createdAt = new Date(s.createdAt);
+      return createdAt >= start && createdAt <= end &&
+             s.enrollmentStatus === 'enrolled' && s.sourceLeadId != null;
+    }).length;
     
     // Calculate conversion rate (leads to enrollment)
-    // Chỉ tính từ students được chuyển đổi từ leads
-    const conversionRate = allLeads.length > 0
-      ? (totalRegisteredStudents / allLeads.length * 100).toFixed(2)
+    // Chỉ tính từ students được chuyển đổi từ leads trong khoảng thời gian
+    const conversionRate = totalPotentialStudents > 0
+      ? (totalRegisteredStudents / totalPotentialStudents * 100).toFixed(2)
       : 0;
     
     // Get new students by campaign for chart

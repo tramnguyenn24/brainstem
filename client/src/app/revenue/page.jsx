@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { statisticService } from '../api/statistic/statisticService';
 import styles from './revenue.module.css';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChartCard } from '../components/charts';
 import toast from "react-hot-toast";
 
 // Utility function để extract error message
@@ -297,159 +297,144 @@ const RevenuePage = () => {
       {/* Charts */}
       <div className={styles.chartsContainer}>
         {/* Biểu đồ Cột - Doanh thu theo Chiến dịch */}
-        <div className={styles.chartCard}>
-          <div className={styles.chartHeader}>
-            <h2>Biểu đồ Cột - Doanh thu theo Chiến dịch</h2>
-            <button
-              type="button"
-              className={styles.periodButton}
-              onClick={() => setCampaignSortOrder(campaignSortOrder === 'desc' ? 'asc' : 'desc')}
-            >
-              {campaignSortOrder === 'desc' ? 'Doanh thu cao → thấp' : 'Doanh thu thấp → cao'}
-            </button>
-          </div>
+        {(() => {
+          const rawCampaigns = (statistics?.data?.topCampaigns || []).map(c => ({
+            name: c.name,
+            revenue: Number(c.revenue) || 0
+          }));
 
-          {(() => {
-            const rawCampaigns = (statistics?.data?.topCampaigns || []).map(c => ({
-              name: c.name,
-              revenue: Number(c.revenue) || 0
-            }));
-
-            if (!rawCampaigns.length) {
-              return (
+          if (!rawCampaigns.length) {
+            return (
+              <div className={styles.chartCard}>
+                <h2>Biểu đồ Cột - Doanh thu theo Chiến dịch</h2>
                 <div className={styles.noData}>
                   Không có dữ liệu doanh thu theo chiến dịch trong khoảng thời gian đã chọn.
                 </div>
-              );
-            }
-
-            const hasPositive = rawCampaigns.some(c => c.revenue > 0);
-            const campaignData = (hasPositive ? rawCampaigns.filter(c => c.revenue > 0) : rawCampaigns)
-              .sort((a, b) =>
-                campaignSortOrder === 'desc'
-                  ? b.revenue - a.revenue
-                  : a.revenue - b.revenue
-              );
-
-            return (
-              <div className={styles.rechartsContainer}>
-                <ResponsiveContainer width="100%" height={400}>
-                  <BarChart
-                    data={campaignData}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
-                  >
-                    <XAxis
-                      dataKey="name"
-                      angle={-20}
-                      textAnchor="end"
-                      interval={0}
-                    />
-                    <YAxis
-                      tickFormatter={(value) => new Intl.NumberFormat('vi-VN', {
-                        style: 'currency',
-                        currency: 'VND',
-                        notation: 'compact'
-                      }).format(Number(value))}
-                      stroke="#82ca9d"
-                    />
-                    <Tooltip
-                      contentStyle={{ background: "#151c2c", border: "none", color: "white" }}
-                      formatter={(value) => new Intl.NumberFormat('vi-VN', {
-                        style: 'currency',
-                        currency: 'VND'
-                      }).format(Number(value))}
-                      labelFormatter={(label) => `Chiến dịch: ${label}`}
-                    />
-                    <Legend />
-                    <Bar dataKey="revenue" fill="#82ca9d" name="Doanh thu (VNĐ)" />
-                  </BarChart>
-                </ResponsiveContainer>
               </div>
             );
-          })()}
-        </div>
+          }
+
+          const hasPositive = rawCampaigns.some(c => c.revenue > 0);
+          const campaignData = (hasPositive ? rawCampaigns.filter(c => c.revenue > 0) : rawCampaigns)
+            .sort((a, b) =>
+              campaignSortOrder === 'desc'
+                ? b.revenue - a.revenue
+                : a.revenue - b.revenue
+            );
+
+          return (
+            <div style={{ position: 'relative' }}>
+              <div style={{ position: 'absolute', top: '24px', right: '24px', zIndex: 10 }}>
+                <button
+                  type="button"
+                  className={styles.periodButton}
+                  onClick={() => setCampaignSortOrder(campaignSortOrder === 'desc' ? 'asc' : 'desc')}
+                  style={{
+                    padding: '8px 16px',
+                    background: '#313a46',
+                    border: '1px solid #404954',
+                    borderRadius: '6px',
+                    color: '#dee2e6',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem'
+                  }}
+                >
+                  {campaignSortOrder === 'desc' ? 'Doanh thu cao → thấp' : 'Doanh thu thấp → cao'}
+                </button>
+              </div>
+              <BarChartCard
+                title="Biểu đồ Cột - Doanh thu theo Chiến dịch"
+                data={campaignData.map(c => ({
+                  name: c.name,
+                  'Doanh thu (VNĐ)': c.revenue
+                }))}
+                dataKey="name"
+                bars={[{
+                  dataKey: 'Doanh thu (VNĐ)',
+                  name: 'Doanh thu (VNĐ)',
+                  color: '#82ca9d'
+                }]}
+                xAxisLabel="Chiến dịch"
+                yAxisLabel="Doanh thu"
+                height={400}
+                colors={{ primary: '#82ca9d' }}
+                hideXAxisLabels={true}
+                yAxisFormatter={(value) => new Intl.NumberFormat('vi-VN', {
+                  style: 'currency',
+                  currency: 'VND',
+                  notation: 'compact'
+                }).format(Number(value))}
+                tooltipFormatter={(value) => new Intl.NumberFormat('vi-VN', {
+                  style: 'currency',
+                  currency: 'VND'
+                }).format(Number(value))}
+              />
+            </div>
+          );
+        })()}
 
         {/* Biểu đồ Bar - Doanh thu theo Thời gian */}
-        <div className={styles.chartCard}>
-          <h2>Biểu đồ Cột - Doanh thu theo Thời gian</h2>
-          <div className={styles.debugInfo}>
-            <p>Dữ liệu: {statistics?.data?.revenueData?.length || 0} điểm dữ liệu</p>
-            <p>Khoảng thời gian: {dateRange.startDate} đến {dateRange.endDate}</p>
-          </div>
-          <div className={styles.rechartsContainer}>
-            <ResponsiveContainer width="100%" height={360}>
-              <BarChart
-                data={statistics?.data?.revenueData?.map(item => ({
-                  date: item.date,
-                  revenue: item.revenue || 0
-                })) || [
-                  { date: '01/01', revenue: 2500000 },
-                  { date: '01/02', revenue: 3000000 },
-                  { date: '01/03', revenue: 3500000 },
-                  { date: '01/04', revenue: 4000000 },
-                  { date: '01/05', revenue: 4500000 }
-                ]}
-                margin={{ top: 10, right: 30, left: 20, bottom: 5 }}
-              >
-                <XAxis dataKey="date" />
-                <YAxis
-                  tickFormatter={(value) => new Intl.NumberFormat('vi-VN', {
-                    style: 'currency',
-                    currency: 'VND',
-                    notation: 'compact'
-                  }).format(Number(value))}
-                  stroke="#82ca9d"
-                />
-                <Tooltip
-                  contentStyle={{background:"#151c2c", border:"none", color: "white"}}
-                  formatter={(value) => new Intl.NumberFormat('vi-VN', {
-                    style: 'currency',
-                    currency: 'VND'
-                  }).format(Number(value))}
-                  labelFormatter={(label) => `Thời gian: ${label}`}
-                />
-                <Legend />
-                <Bar dataKey="revenue" fill="#82ca9d" name="Doanh thu" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+        <BarChartCard
+          title="Biểu đồ Cột - Doanh thu theo Thời gian"
+          data={statistics?.data?.revenueData?.map(item => ({
+            name: item.date,
+            'Doanh thu': item.revenue || 0
+          })) || [
+            { name: '01/01', 'Doanh thu': 2500000 },
+            { name: '01/02', 'Doanh thu': 3000000 },
+            { name: '01/03', 'Doanh thu': 3500000 },
+            { name: '01/04', 'Doanh thu': 4000000 },
+            { name: '01/05', 'Doanh thu': 4500000 }
+          ]}
+          dataKey="name"
+          bars={[{
+            dataKey: 'Doanh thu',
+            name: 'Doanh thu',
+            color: '#82ca9d'
+          }]}
+          xAxisLabel="Thời gian"
+          yAxisLabel="Doanh thu"
+          height={400}
+          colors={{ primary: '#82ca9d' }}
+          hideXAxisLabels={false}
+          yAxisFormatter={(value) => new Intl.NumberFormat('vi-VN', {
+            style: 'currency',
+            currency: 'VND',
+            notation: 'compact'
+          }).format(Number(value))}
+          tooltipFormatter={(value) => new Intl.NumberFormat('vi-VN', {
+            style: 'currency',
+            currency: 'VND'
+          }).format(Number(value))}
+        />
 
         {/* Biểu đồ Bar - Số đăng ký theo Thời gian */}
-        <div className={styles.chartCard}>
-          <h2>Biểu đồ Cột - Số đăng ký theo Thời gian</h2>
-          <div className={styles.debugInfo}>
-            <p>Dữ liệu: {statistics?.data?.revenueData?.length || 0} điểm dữ liệu</p>
-            <p>Khoảng thời gian: {dateRange.startDate} đến {dateRange.endDate}</p>
-          </div>
-          <div className={styles.rechartsContainer}>
-            <ResponsiveContainer width="100%" height={360}>
-              <BarChart
-                data={statistics?.data?.revenueData?.map(item => ({
-                  date: item.date,
-                  enrollments: item.enrollments || 0
-                })) || [
-                  { date: '01/01', enrollments: 15 },
-                  { date: '01/02', enrollments: 18 },
-                  { date: '01/03', enrollments: 21 },
-                  { date: '01/04', enrollments: 24 },
-                  { date: '01/05', enrollments: 27 }
-                ]}
-                margin={{ top: 10, right: 30, left: 20, bottom: 5 }}
-              >
-                <XAxis dataKey="date" />
-                <YAxis stroke="#8884d8" allowDecimals={false} />
-                <Tooltip
-                  contentStyle={{background:"#151c2c", border:"none", color: "white"}}
-                  formatter={(value) => [`${value}`, 'Số đăng ký']}
-                  labelFormatter={(label) => `Thời gian: ${label}`}
-                />
-                <Legend />
-                <Bar dataKey="enrollments" fill="#8884d8" name="Số đăng ký" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+        <BarChartCard
+          title="Biểu đồ Cột - Số đăng ký theo Thời gian"
+          data={statistics?.data?.revenueData?.map(item => ({
+            name: item.date,
+            'Số đăng ký': item.enrollments || 0
+          })) || [
+            { name: '01/01', 'Số đăng ký': 15 },
+            { name: '01/02', 'Số đăng ký': 18 },
+            { name: '01/03', 'Số đăng ký': 21 },
+            { name: '01/04', 'Số đăng ký': 24 },
+            { name: '01/05', 'Số đăng ký': 27 }
+          ]}
+          dataKey="name"
+          bars={[{
+            dataKey: 'Số đăng ký',
+            name: 'Số đăng ký',
+            color: '#8884d8'
+          }]}
+          xAxisLabel="Thời gian"
+          yAxisLabel="Số đăng ký"
+          height={400}
+          colors={{ primary: '#8884d8' }}
+          hideXAxisLabels={false}
+          yAxisFormatter={undefined}
+          tooltipFormatter={undefined}
+        />
       </div>
       </div>
     </div>

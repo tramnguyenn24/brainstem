@@ -7,21 +7,7 @@ import { studentService } from './api/student/studentService';
 import styles from './dashboard.module.css';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
-import { BarChart, LineChart } from '@mui/x-charts';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
-
-// Create dark theme for charts
-const darkTheme = createTheme({
-  palette: {
-    mode: 'dark',
-    primary: {
-      main: '#727cf5',
-    },
-    secondary: {
-      main: '#4ecdc4',
-    },
-  },
-});
+import { BarChartCard, LineChartCard, StackedBarChartCard } from './components/charts';
 
 const Dashboard = () => {
   const [campaigns, setCampaigns] = useState([]);
@@ -171,8 +157,7 @@ const Dashboard = () => {
   const channelStats = charts.channelStats || [];
 
   return (
-    <ThemeProvider theme={darkTheme}>
-      <div className={styles.container}>
+    <div className={styles.container}>
         <div className={styles.content}>
         
         {/* Summary Cards */}
@@ -327,121 +312,102 @@ const Dashboard = () => {
         <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(500px, 1fr))', gap: '24px', marginBottom: 32}}>
             {/* Chart 1: New Students by Campaign (Bar) */}
             {newStudentsByCampaign.length > 0 && (
-              <div style={{
-                background: 'linear-gradient(135deg, #1f2937 0%, #374151 100%)',
-                border: '1px solid #4b5563',
-                borderRadius: '16px',
-                padding: '24px'
-              }}>
-                <h3 style={{fontSize: '1.25rem', fontWeight: 600, marginBottom: '20px', color: '#dee2e6'}}>
-                  HV mới theo Chiến dịch
-                </h3>
-                <BarChart
-                  width={500}
-                  height={400}
-                  series={[{
-                    data: newStudentsByCampaign.map(c => c.newStudentsCount),
-                    label: 'HV mới',
-                    color: '#727cf5'
-                  }]}
-                  xAxis={[{
-                    data: newStudentsByCampaign.map(c => c.name),
-                    scaleType: 'band',
-                  }]}
-                />
-              </div>
+              <BarChartCard
+                title="HV mới theo Chiến dịch"
+                data={newStudentsByCampaign.map(c => ({
+                  name: c.name,
+                  'HV mới': c.newStudentsCount
+                }))}
+                dataKey="name"
+                bars={[{
+                  dataKey: 'HV mới',
+                  name: 'HV mới',
+                  color: '#727cf5'
+                }]}
+                xAxisLabel="Chiến dịch"
+                yAxisLabel="Số lượng"
+                height={400}
+                colors={{ primary: '#727cf5' }}
+                hideXAxisLabels={true}
+                yAxisFormatter={undefined}
+                tooltipFormatter={undefined}
+              />
             )}
 
             {/* Chart 2: New Students by Month (Line) */}
             {newStudentsByMonth.length > 0 && (
-              <div style={{
-                background: 'linear-gradient(135deg, #1f2937 0%, #374151 100%)',
-                border: '1px solid #4b5563',
-                borderRadius: '16px',
-                padding: '24px'
-              }}>
-                <h3 style={{fontSize: '1.25rem', fontWeight: 600, marginBottom: '20px', color: '#dee2e6'}}>
-                  HV mới theo Tháng
-                </h3>
-                <LineChart
-                  width={500}
-                  height={400}
-                  series={[{
-                    data: newStudentsByMonth.map(m => m.count),
-                    label: 'HV mới',
-                    color: '#4ecdc4'
-                  }]}
-                  xAxis={[{
-                    data: newStudentsByMonth.map(m => m.month),
-                    scaleType: 'point',
-                  }]}
-                />
-              </div>
+              <LineChartCard
+                title="HV mới theo Tháng"
+                data={newStudentsByMonth.map(m => ({
+                  name: m.month,
+                  'HV mới': m.count
+                }))}
+                dataKey="name"
+                lines={[{
+                  dataKey: 'HV mới',
+                  name: 'HV mới',
+                  color: '#4ecdc4'
+                }]}
+                xAxisLabel="Tháng"
+                yAxisLabel="Số lượng"
+                height={400}
+                colors={{ primary: '#4ecdc4' }}
+              />
             )}
 
             {/* Chart 3: ROI by Campaign */}
             {roiByCampaign.length > 0 && (
-              <div style={{
-                background: 'linear-gradient(135deg, #1f2937 0%, #374151 100%)',
-                border: '1px solid #4b5563',
-                borderRadius: '16px',
-                padding: '24px'
-              }}>
-                <h3 style={{fontSize: '1.25rem', fontWeight: 600, marginBottom: '20px', color: '#dee2e6'}}>
-                  ROI theo Chiến dịch
-                </h3>
-                <BarChart
-                  width={500}
-                  height={400}
-                  series={[{
-                    data: roiByCampaign.map(c => c.roi),
-                    label: 'ROI (%)',
-                    id: 'roi',
-                    color: '#f9ca24'
-                  }]}
-                  xAxis={[{
-                    data: roiByCampaign.map(c => c.name),
-                    scaleType: 'band',
-                  }]}
-                />
-              </div>
+              <BarChartCard
+                title="ROI theo Chiến dịch"
+                data={roiByCampaign.map(c => ({
+                  name: c.name,
+                  'ROI (%)': c.roi
+                }))}
+                dataKey="name"
+                bars={[{
+                  dataKey: 'ROI (%)',
+                  name: 'ROI (%)',
+                  color: '#f9ca24'
+                }]}
+                xAxisLabel="Chiến dịch"
+                yAxisLabel="ROI (%)"
+                height={400}
+                colors={{ primary: '#f9ca24' }}
+                hideXAxisLabels={true}
+                yAxisFormatter={undefined}
+                tooltipFormatter={undefined}
+              />
             )}
 
             {/* Chart 4: Stacked Bar - Leads and New Students by Channel */}
             {channelStats.length > 0 && (
-              <div style={{
-                background: 'linear-gradient(135deg, #1f2937 0%, #374151 100%)',
-                border: '1px solid #4b5563',
-                borderRadius: '16px',
-                padding: '24px',
-                gridColumn: '1 / -1'
-              }}>
-                <h3 style={{fontSize: '1.25rem', fontWeight: 600, marginBottom: '20px', color: '#dee2e6'}}>
-                  Số HVTN và số HVM theo Kênh truyền thông
-                </h3>
-                <BarChart
-                  width={1000}
-                  height={400}
-                  series={[
+              <div style={{ gridColumn: '1 / -1' }}>
+                <StackedBarChartCard
+                  title="Số HVTN và số HVM theo Kênh truyền thông"
+                  data={channelStats.map(c => ({
+                    name: c.channel,
+                    'HVTN': c.leads,
+                    'HVM': c.students
+                  }))}
+                  dataKey="name"
+                  bars={[
                     {
-                      data: channelStats.map(c => c.leads),
-                      label: 'HVTN',
-                      id: 'leads',
+                      dataKey: 'HVTN',
+                      name: 'HVTN',
                       color: '#4ecdc4',
-                      stack: 'total'
+                      stackId: 'total'
                     },
                     {
-                      data: channelStats.map(c => c.students),
-                      label: 'HVM',
-                      id: 'students',
+                      dataKey: 'HVM',
+                      name: 'HVM',
                       color: '#727cf5',
-                      stack: 'total'
+                      stackId: 'total'
                     }
                   ]}
-                  xAxis={[{
-                    data: channelStats.map(c => c.channel),
-                    scaleType: 'band',
-                  }]}
+                  xAxisLabel="Kênh truyền thông"
+                  yAxisLabel="Số lượng"
+                  height={400}
+                  colors={{ primary: '#4ecdc4', secondary: '#727cf5' }}
                 />
               </div>
             )}
@@ -833,7 +799,6 @@ const Dashboard = () => {
       </div>
         </div>
       </div>
-    </ThemeProvider>
   );
 };
 
