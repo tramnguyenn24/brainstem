@@ -88,25 +88,28 @@ exports.create = async (req, res) => {
   const repo = AppDataSource.getRepository('Form');
   const channelRepo = AppDataSource.getRepository('Channel');
   
-  // Merge description and campaignId into settings if provided
+  // Merge description into settings if provided
   const settings = {
     ...(body.settings || {}),
     submitText: body.settings?.submitText || 'Gửi',
     theme: body.settings?.theme || 'light'
   };
   
-  // Store description and campaignId in settings if not in entity
+  // Store description in settings
   if (body.description) {
     settings.description = body.description;
   }
-  if (body.campaignId) {
-    settings.campaignId = body.campaignId;
+  
+  // campaignId is now stored as foreign key, but keep it in settings for backward compatibility
+  const campaignId = body.campaignId != null ? Number(body.campaignId) : null;
+  if (campaignId) {
+    settings.campaignId = campaignId; // Keep in settings for backward compatibility
   }
   
   let fields = Array.isArray(body.fields) ? body.fields : [];
   
   // Nếu form có campaignId, tự động thêm trường hỏi về kênh truyền thông nếu chưa có
-  if (body.campaignId) {
+  if (campaignId) {
     const hasChannelField = fields.some(f => 
       f.id === 'channel' || 
       f.id === 'channelId' || 
@@ -138,6 +141,8 @@ exports.create = async (req, res) => {
     fields: fields,
     settings: settings,
     embedCode: body.embedCode || null,
+    campaignId: campaignId, // Store as foreign key
+    createdByStaffId: body.createdByStaffId != null ? Number(body.createdByStaffId) : null,
     createdAt: new Date(),
     updatedAt: new Date()
   };
@@ -163,7 +168,7 @@ exports.update = async (req, res) => {
   if (!existing) return res.status(404).json({ message: 'Form not found' });
   const body = req.body || {};
   
-  // Merge description and campaignId into settings if provided
+  // Merge description into settings if provided
   const settings = {
     ...(existing.settings || {}),
     ...(body.settings || {})
@@ -172,14 +177,19 @@ exports.update = async (req, res) => {
   if (body.description) {
     settings.description = body.description;
   }
-  if (body.campaignId !== undefined) {
-    settings.campaignId = body.campaignId;
+  
+  // campaignId is now stored as foreign key, but keep it in settings for backward compatibility
+  const campaignId = body.campaignId !== undefined 
+    ? (body.campaignId != null ? Number(body.campaignId) : null)
+    : existing.campaignId;
+  
+  if (campaignId) {
+    settings.campaignId = campaignId; // Keep in settings for backward compatibility
   }
   
   let fields = body.fields !== undefined ? body.fields : existing.fields;
   
   // Nếu form có campaignId và chưa có trường hỏi về kênh, tự động thêm
-  const campaignId = settings.campaignId || existing.settings?.campaignId;
   if (campaignId && Array.isArray(fields)) {
     const hasChannelField = fields.some(f => 
       f.id === 'channel' || 
@@ -212,6 +222,10 @@ exports.update = async (req, res) => {
     status: body.status !== undefined ? body.status : existing.status,
     fields: fields,
     settings: settings,
+    campaignId: campaignId, // Update foreign key
+    createdByStaffId: body.createdByStaffId !== undefined 
+      ? (body.createdByStaffId != null ? Number(body.createdByStaffId) : null)
+      : existing.createdByStaffId,
     updatedAt: new Date()
   };
   const saved = await repo.save(updated);
@@ -256,8 +270,8 @@ exports.submitForm = async (req, res) => {
   const body = req.body || {};
   const formData = body.data || body;
   
-  // Lấy campaignId từ form settings
-  const campaignId = form.settings?.campaignId || null;
+  // Lấy campaignId từ form (ưu tiên foreign key, fallback về settings cho backward compatibility)
+  const campaignId = form.campaignId || form.settings?.campaignId || null;
   
   // Tìm channelId từ form data
   // Tìm trường có id là 'channel', 'channelId', 'kenh', 'kenhtruyenthong', hoặc label chứa "kênh"
@@ -336,6 +350,7 @@ exports.submitForm = async (req, res) => {
     interestLevel: formData.interestLevel || 'medium',
     campaignId: campaignId,
     channelId: channelId,
+    formId: form.id, // Track nguồn gốc từ form nào
     tags: [],
     createdAt: new Date(),
     updatedAt: new Date()

@@ -13,9 +13,19 @@ module.exports = new EntitySchema({
     campaignId: { name: 'campaign_id', type: Number, nullable: true },
     channelId: { name: 'channel_id', type: Number, nullable: true },
     assignedStaffId: { name: 'assigned_staff_id', type: Number, nullable: true },
+    formId: { name: 'form_id', type: Number, nullable: true }, // Track nguồn gốc từ form nào
     tags: { type: 'text', array: true, nullable: true },
     createdAt: { name: 'created_at', type: 'timestamptz', createDate: true },
     updatedAt: { name: 'updated_at', type: 'timestamptz', updateDate: true }
+  },
+  relations: {
+    form: {
+      type: 'many-to-one',
+      target: 'Form',
+      joinColumn: { name: 'form_id', referencedColumnName: 'id' },
+      nullable: true,
+      onDelete: 'SET NULL'
+    }
   }
 });
 

@@ -38,6 +38,7 @@ create table if not exists leads (
   campaign_id int references campaigns(id) on delete set null,
   channel_id int references channels(id) on delete set null,
   assigned_staff_id int references staff(id) on delete set null,
+  form_id int references forms(id) on delete set null,
   tags text[],
   created_at timestamptz default now(),
   updated_at timestamptz default now()
@@ -66,6 +67,8 @@ create table if not exists forms (
   fields jsonb,
   settings jsonb,
   embed_code text,
+  campaign_id int references campaigns(id) on delete set null,
+  created_by_staff_id int references staff(id) on delete set null,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );

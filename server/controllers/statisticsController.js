@@ -527,6 +527,40 @@ exports.getDashboardStats = async (req, res) => {
         count
       });
     }
+
+    // Get new students by campaign & month (for stacked bar chart on dashboard)
+    const newStudentsByCampaignMonth = [];
+    for (const month of months) {
+      // Chỉ tính học viên mới trong khoảng thời gian theo từng tháng và có campaignId
+      const monthStudents = allStudents.filter(s => {
+        const createdAt = new Date(s.createdAt);
+        return (
+          createdAt >= month.start &&
+          createdAt <= month.end &&
+          s.newStudent === true &&
+          s.campaignId != null
+        );
+      });
+
+      const countsByCampaignId = {};
+      for (const student of monthStudents) {
+        const key = String(student.campaignId);
+        countsByCampaignId[key] = (countsByCampaignId[key] || 0) + 1;
+      }
+
+      const row = {
+        month: month.month
+      };
+
+      Object.entries(countsByCampaignId).forEach(([campaignId, count]) => {
+        const numericId = isNaN(Number(campaignId)) ? campaignId : Number(campaignId);
+        const campaign = allCampaigns.find(c => c.id === numericId);
+        const name = campaign ? campaign.name : 'Khác';
+        row[name] = (row[name] || 0) + count;
+      });
+
+      newStudentsByCampaignMonth.push(row);
+    }
     
     // Get ROI by campaign
     const roiByCampaign = await Promise.all(
@@ -603,6 +637,7 @@ exports.getDashboardStats = async (req, res) => {
       charts: {
         newStudentsByCampaign: campaignsWithNewStudents.filter(c => c.newStudentsCount > 0),
         newStudentsByMonth,
+        newStudentsByCampaignMonth,
         roiByCampaign: roiByCampaign.filter(c => c.roi > 0),
         channelStats
       }

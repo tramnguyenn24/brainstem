@@ -19,8 +19,49 @@ const Dashboard = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
+  // Bộ lọc phía client (chỉ lọc trên dữ liệu đã fetch sẵn)
+  const [campaignSearch, setCampaignSearch] = useState('');
+  const [studentSearch, setStudentSearch] = useState('');
+  const [studentStatusFilter, setStudentStatusFilter] = useState('');
+
   // Fetch all dashboard data
   useEffect(() => {
+    // Chỉ chạy API khi:
+    // - Cả startDate & endDate đều trống (load mặc định), hoặc
+    // - Cả hai đều được chọn & hợp lệ
+
+    // Trường hợp chỉ chọn 1 trong 2 ngày => không gọi API
+    if ((startDate && !endDate) || (!startDate && endDate)) {
+      return;
+    }
+
+    // Nếu cả hai đều được chọn thì validate
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        setError("Ngày không hợp lệ");
+        toast.error("Ngày không hợp lệ. Vui lòng chọn lại!", {
+          duration: 3000,
+          position: "top-center"
+        });
+        return;
+      }
+
+      if (start > end) {
+        setError("Khoảng thời gian không hợp lệ");
+        toast.error("Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc!", {
+          duration: 3000,
+          position: "top-center"
+        });
+        return;
+      } else if (error === "Khoảng thời gian không hợp lệ" || error === "Ngày không hợp lệ") {
+        // Xóa lỗi cũ nếu user đã sửa lại khoảng thời gian hợp lệ
+        setError(null);
+      }
+    }
+
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
@@ -156,8 +197,39 @@ const Dashboard = () => {
   const roiByCampaign = charts.roiByCampaign || [];
   const channelStats = charts.channelStats || [];
 
+  // Áp dụng bộ lọc phía client (không dùng hook để tránh cảnh báo Hooks)
+  const filteredCampaigns = (() => {
+    if (!campaignSearch) return campaigns;
+    const q = campaignSearch.toLowerCase();
+    return campaigns.filter((cmp) => (cmp.name || '').toLowerCase().includes(q));
+  })();
+
+  const filteredRecentStudents = (() => {
+    let result = recentStudents;
+
+    if (studentSearch) {
+      const q = studentSearch.toLowerCase();
+      result = result.filter((s) => {
+        const fullName = (s.fullName || s.name || '').toLowerCase();
+        const email = (s.email || '').toLowerCase();
+        const phone = (s.phone || '').toLowerCase();
+        return (
+          fullName.includes(q) ||
+          email.includes(q) ||
+          phone.includes(q)
+        );
+      });
+    }
+
+    if (studentStatusFilter) {
+      result = result.filter((s) => (s.status || '').toLowerCase() === studentStatusFilter);
+    }
+
+    return result;
+  })();
+
   return (
-    <div className={styles.container}>
+      <div className={styles.container}>
         <div className={styles.content}>
         
         {/* Summary Cards */}
@@ -262,6 +334,7 @@ const Dashboard = () => {
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
+                max={endDate || undefined}
                 style={{
                   padding: '8px 12px',
                   background: '#313a46',
@@ -276,6 +349,7 @@ const Dashboard = () => {
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
+                min={startDate || undefined}
                 style={{
                   padding: '8px 12px',
                   background: '#313a46',
@@ -322,8 +396,8 @@ const Dashboard = () => {
                 bars={[{
                   dataKey: 'HV mới',
                   name: 'HV mới',
-                  color: '#727cf5'
-                }]}
+                    color: '#727cf5'
+                  }]}
                 xAxisLabel="Chiến dịch"
                 yAxisLabel="Số lượng"
                 height={400}
@@ -331,7 +405,7 @@ const Dashboard = () => {
                 hideXAxisLabels={true}
                 yAxisFormatter={undefined}
                 tooltipFormatter={undefined}
-              />
+                />
             )}
 
             {/* Chart 2: New Students by Month (Line) */}
@@ -346,13 +420,13 @@ const Dashboard = () => {
                 lines={[{
                   dataKey: 'HV mới',
                   name: 'HV mới',
-                  color: '#4ecdc4'
-                }]}
+                    color: '#4ecdc4'
+                  }]}
                 xAxisLabel="Tháng"
                 yAxisLabel="Số lượng"
                 height={400}
                 colors={{ primary: '#4ecdc4' }}
-              />
+                />
             )}
 
             {/* Chart 3: ROI by Campaign */}
@@ -367,8 +441,8 @@ const Dashboard = () => {
                 bars={[{
                   dataKey: 'ROI (%)',
                   name: 'ROI (%)',
-                  color: '#f9ca24'
-                }]}
+                    color: '#f9ca24'
+                  }]}
                 xAxisLabel="Chiến dịch"
                 yAxisLabel="ROI (%)"
                 height={400}
@@ -376,7 +450,7 @@ const Dashboard = () => {
                 hideXAxisLabels={true}
                 yAxisFormatter={undefined}
                 tooltipFormatter={undefined}
-              />
+                />
             )}
 
             {/* Chart 4: Stacked Bar - Leads and New Students by Channel */}
@@ -415,34 +489,51 @@ const Dashboard = () => {
 
         {/* Campaigns section */}
         <div style={{marginBottom: 32}}>
-          <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20}}>
+          <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, gap: 16, flexWrap: 'wrap'}}>
             <h2 style={{fontSize: '1.5rem', fontWeight: 600, color: '#dee2e6', margin: 0}}>🚀 Chiến dịch đang chạy</h2>
-            <Link href="/chiendich" style={{
-              padding: '8px 16px',
-              fontSize: '0.875rem',
-              background: 'transparent',
-              border: '1px solid #404954',
-              color: '#aab8c5',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontWeight: 500,
-              textDecoration: 'none',
-              transition: 'all 0.2s'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = '#727cf5';
-              e.currentTarget.style.color = '#727cf5';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = '#404954';
-              e.currentTarget.style.color = '#aab8c5';
-            }}
-            >
-              Xem tất cả →
-            </Link>
+            <div style={{display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap'}}>
+              <input
+                type="text"
+                value={campaignSearch}
+                onChange={(e) => setCampaignSearch(e.target.value)}
+                placeholder="Lọc theo tên chiến dịch..."
+                style={{
+                  padding: '8px 12px',
+                  background: '#313a46',
+                  border: '1px solid #404954',
+                  borderRadius: '6px',
+                  color: '#dee2e6',
+                  fontSize: '0.875rem',
+                  minWidth: '220px'
+                }}
+              />
+              <Link href="/chiendich" style={{
+                padding: '8px 16px',
+                fontSize: '0.875rem',
+                background: 'transparent',
+                border: '1px solid #404954',
+                color: '#aab8c5',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: 500,
+                textDecoration: 'none',
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#727cf5';
+                e.currentTarget.style.color = '#727cf5';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = '#404954';
+                e.currentTarget.style.color = '#aab8c5';
+              }}
+              >
+                Xem tất cả →
+              </Link>
+            </div>
           </div>
           <div className={styles.dashboard}>
-          {campaigns.length > 0 ? campaigns.map((cmp) => {
+          {filteredCampaigns.length > 0 ? filteredCampaigns.map((cmp) => {
             const revenue = Number(cmp.revenue) || 0;
             const cost = Number(cmp.cost) || 0;
             const roi = cmp.roi != null ? Number(cmp.roi) : (cost > 0 ? ((revenue - cost) / cost * 100) : 0);
@@ -643,9 +734,42 @@ const Dashboard = () => {
 
       {/* Recent Students */}
       <div className={styles.detailsSection} style={{marginTop: 48}}>
-        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20}}>
+        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, gap: 16, flexWrap: 'wrap'}}>
           <h2 style={{fontSize: '1.5rem', fontWeight: 600, margin: 0, color: '#dee2e6'}}>📋 Học viên đăng ký gần đây</h2>
-          <div style={{display: 'flex', gap: 10}}>
+          <div style={{display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center'}}>
+            <div style={{display: 'flex', gap: 8}}>
+              <input
+                type="text"
+                value={studentSearch}
+                onChange={(e) => setStudentSearch(e.target.value)}
+                placeholder="Tìm theo tên, email, SĐT..."
+                style={{
+                  padding: '8px 12px',
+                  background: '#313a46',
+                  border: '1px solid #404954',
+                  borderRadius: '6px',
+                  color: '#dee2e6',
+                  fontSize: '0.875rem',
+                  minWidth: '220px'
+                }}
+              />
+              <select
+                value={studentStatusFilter}
+                onChange={(e) => setStudentStatusFilter(e.target.value)}
+                style={{
+                  padding: '8px 12px',
+                  background: '#313a46',
+                  border: '1px solid #404954',
+                  borderRadius: '6px',
+                  color: '#dee2e6',
+                  fontSize: '0.875rem'
+                }}
+              >
+                <option value="">Tất cả trạng thái</option>
+                <option value="active">Hoạt động</option>
+                <option value="inactive">Không hoạt động</option>
+              </select>
+            </div>
             <Link 
               href="/hocvien/add"
               style={{
@@ -719,7 +843,7 @@ const Dashboard = () => {
               </tr>
             </thead>
             <tbody>
-              {recentStudents.length > 0 ? recentStudents.map((student, index) => (
+              {filteredRecentStudents.length > 0 ? filteredRecentStudents.map((student, index) => (
                 <tr 
                   key={student.id}
                   style={{

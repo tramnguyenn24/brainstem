@@ -79,11 +79,11 @@ const Page = () => {
     fetchStudents(currentPage, itemsPerPage, searchFilter, statusFilter, campaignNameFilter);
   }, [currentPage, itemsPerPage, searchFilter, statusFilter, campaignNameFilter]);
 
-  // Fetch statistics on mount and when date range changes
+  // Fetch statistics on mount, khi khoảng ngày hoặc bộ lọc thay đổi
   useEffect(() => {
     fetchStatistics();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dateRange]);
+  }, [dateRange, searchFilter, statusFilter, campaignNameFilter]);
 
   useEffect(() => {
     const timerId = setTimeout(() => {
@@ -136,7 +136,10 @@ const Page = () => {
       setStatisticsLoading(true);
       const response = await studentService.getStudentSummary({
         startDate: dateRange.startDate,
-        endDate: dateRange.endDate
+        endDate: dateRange.endDate,
+        search: searchFilter,
+        status: statusFilter,
+        campaignName: campaignNameFilter
       });
       
       if (response && (response.code >= 400 || response.error || response.status >= 400)) {
@@ -144,10 +147,17 @@ const Page = () => {
         return;
       }
       
-      // Ưu tiên dùng totalAll nếu có (tổng số tất cả học viên), nếu không thì dùng total (trong khoảng thời gian)
+      // Nếu có filter thời gian, dùng total và newStudentsCount (đã lọc theo filter + thời gian)
+      // Nếu không có filter thời gian, dùng totalAll và newStudentsCountAll (đã lọc theo filter, không giới hạn thời gian)
+      // Cả hai đều đã được lọc theo search/status/campaignName
+      const hasDateFilter = dateRange.startDate || dateRange.endDate;
       setStatistics({
-        total: response?.totalAll || response?.total || 0,
-        newStudentsCount: response?.newStudentsCountAll || response?.newStudentsCount || 0
+        total: hasDateFilter 
+          ? (response?.total || 0)  // Có filter thời gian: dùng total (đã lọc theo filter + thời gian)
+          : (response?.totalAll || response?.total || 0), // Không có filter thời gian: dùng totalAll (đã lọc theo filter)
+        newStudentsCount: hasDateFilter
+          ? (response?.newStudentsCount || 0)  // Có filter thời gian: dùng newStudentsCount
+          : (response?.newStudentsCountAll || response?.newStudentsCount || 0) // Không có filter thời gian: dùng newStudentsCountAll
       });
     } catch (err) {
       console.error("Error fetching statistics:", err);

@@ -53,10 +53,29 @@ export const studentService = {
 
   getStudentSummary: async (options = {}) => {
     try {
-      const { startDate, endDate } = options;
+      const {
+        startDate,
+        endDate,
+        search,
+        status,
+        enrollmentStatus,
+        campaignId,
+        channelId,
+        assignedStaffId,
+        newStudent,
+        campaignName
+      } = options;
       const params = new URLSearchParams();
       if (startDate) params.append('startDate', startDate);
       if (endDate) params.append('endDate', endDate);
+      if (search) params.append('search', search);
+      if (status) params.append('status', status);
+      if (enrollmentStatus) params.append('enrollmentStatus', enrollmentStatus);
+      if (campaignId) params.append('campaignId', campaignId.toString());
+      if (channelId) params.append('channelId', channelId.toString());
+      if (assignedStaffId) params.append('assignedStaffId', assignedStaffId.toString());
+      if (typeof newStudent === 'boolean') params.append('newStudent', newStudent.toString());
+      if (campaignName) params.append('campaignName', campaignName);
       
       const queryString = params.toString();
       const url = queryString 

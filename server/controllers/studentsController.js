@@ -117,11 +117,12 @@ exports.getStudents = async (req, res) => {
 };
 
 exports.getStudentSummary = async (req, res) => {
-  // Tạo query builder riêng cho summary, không dùng buildQueryBuilder để tránh filter không mong muốn
-  const repo = AppDataSource.getRepository('Student');
-  
-  // Lấy tổng số học viên TẤT CẢ (không filter thời gian)
-  const allStudents = await repo.find();
+  // Sử dụng buildQueryBuilder để tôn trọng các bộ lọc (search, status, campaignName, ...)
+  // nhưng KHÔNG áp dụng filter theo thời gian ở đây
+  const baseQb = buildQueryBuilder(req.query);
+
+  // Lấy tổng số học viên theo các bộ lọc hiện tại (không filter thời gian)
+  const allStudents = await baseQb.getMany();
   const totalAll = allStudents.length;
   let newStudentsCountAll = 0;
   
@@ -132,8 +133,8 @@ exports.getStudentSummary = async (req, res) => {
     }
   }
   
-  // Query builder cho filter thời gian (nếu có)
-  const qb = repo.createQueryBuilder('student');
+  // Query builder cho filter thời gian (nếu có) + giữ nguyên các filter khác
+  const qb = buildQueryBuilder(req.query);
   const { startDate, endDate } = req.query;
   
   // Chỉ áp dụng filter thời gian nếu được cung cấp
@@ -153,8 +154,9 @@ exports.getStudentSummary = async (req, res) => {
     const byStatus = {};
     const byEnrollment = {};
     const byCampaign = {};
-    
-    const newStudentsCount = total;
+
+    // Đếm số HV mới trong khoảng thời gian (dựa vào flag newStudent)
+    let newStudentsCount = 0;
     
     for (const s of items) {
       const st = s.status || 'active';
@@ -164,20 +166,24 @@ exports.getStudentSummary = async (req, res) => {
       const camp = s.campaignId ? await AppDataSource.getRepository('Campaign').findOne({ where: { id: s.campaignId } }) : null;
       const campName = camp ? camp.name : 'Unknown';
       byCampaign[campName] = (byCampaign[campName] || 0) + 1;
+
+      if (s.newStudent === true) {
+        newStudentsCount++;
+      }
     }
     
     // Trả về cả tổng số tất cả và tổng số trong khoảng thời gian
     res.json({ 
-      total: total,                    // Tổng số trong khoảng thời gian
-      totalAll: totalAll,               // Tổng số tất cả học viên
+      total: total,                    // Tổng số trong khoảng thời gian (theo filter + ngày)
+      totalAll: totalAll,              // Tổng số theo filter nhưng KHÔNG filter thời gian
       newStudentsCount: newStudentsCount, // Số học viên mới trong khoảng thời gian
-      newStudentsCountAll: newStudentsCountAll, // Số học viên mới tất cả
+      newStudentsCountAll: newStudentsCountAll, // Số học viên mới tổng
       byStatus, 
       byEnrollment, 
       byCampaign 
     });
   } else {
-    // Nếu không có filter thời gian, trả về tổng số tất cả
+    // Nếu không có filter thời gian, trả về tổng số theo các filter hiện tại
     const byStatus = {};
     const byEnrollment = {};
     const byCampaign = {};
