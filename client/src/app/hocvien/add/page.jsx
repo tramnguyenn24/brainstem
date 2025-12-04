@@ -37,19 +37,19 @@ const AddStudentPage = () => {
           campaignService.getCampaigns({ page: 1, size: 100 }),
           staffService.getStaffMembers({ page: 1, size: 100 })
         ]);
-        
+
         if (channelsResponse && channelsResponse.items) {
           setChannels(channelsResponse.items);
         } else if (Array.isArray(channelsResponse)) {
           setChannels(channelsResponse);
         }
-        
+
         if (campaignsResponse && campaignsResponse.items) {
           setCampaigns(campaignsResponse.items);
         } else if (Array.isArray(campaignsResponse)) {
           setCampaigns(campaignsResponse);
         }
-        
+
         if (staffResponse && staffResponse.items) {
           setStaff(staffResponse.items);
         } else if (Array.isArray(staffResponse)) {
@@ -135,7 +135,7 @@ const AddStudentPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Validate form before submission
     if (!validateForm()) {
       toast.error('Please fix the validation errors before submitting');
@@ -143,10 +143,10 @@ const AddStudentPage = () => {
     }
 
     setIsSubmitting(true);
-    
+
     try {
       toast.loading("Đang thêm học viên...", { id: "add-student" });
-      
+
       const result = await studentService.addStudent({
         fullName: formData.fullName,
         email: formData.email,
@@ -158,7 +158,7 @@ const AddStudentPage = () => {
         assignedStaffId: formData.assignedStaffId ? Number(formData.assignedStaffId) : null,
         newStudent: formData.newStudent
       });
-      
+
       // Check if API response contains error
       if (result && (result.code >= 400 || result.error || result.status >= 400)) {
         const errorMessage = result.message || result.error || 'Không thể thêm học viên. Vui lòng thử lại.';
@@ -169,7 +169,7 @@ const AddStudentPage = () => {
         });
         return;
       }
-      
+
       // Success case
       toast.success("Đã thêm học viên thành công!", {
         id: "add-student",
@@ -179,14 +179,14 @@ const AddStudentPage = () => {
       router.push('/hocvien');
     } catch (error) {
       console.error('Error adding student:', error);
-      
+
       // Parse error response to get message from API
       let errorMessage = 'Không thể thêm học viên. Vui lòng thử lại.';
-      
+
       if (error.message) {
         errorMessage = error.message;
       }
-      
+
       toast.error(errorMessage, {
         id: "add-student",
         duration: 4000,
@@ -310,28 +310,29 @@ const AddStudentPage = () => {
           </select>
         </div>
 
-        <div className={styles.formGroup}>
-          <label>
+        <div className={styles.checkboxGroup}>
+          <label className={styles.checkboxLabel}>
             <input
               type="checkbox"
               name="newStudent"
               checked={formData.newStudent}
               onChange={handleChange}
+              className={styles.checkbox}
             />
-            Học viên mới
+            <span className={styles.checkboxText}>Học viên mới</span>
           </label>
         </div>
 
         <div className={styles.buttonGroup}>
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             className={styles.submitButton}
             disabled={isSubmitting}
           >
             {isSubmitting ? 'Đang thêm...' : 'Thêm học viên'}
           </button>
-          <button 
-            type="button" 
+          <button
+            type="button"
             className={styles.cancelButton}
             onClick={() => router.push('/hocvien')}
             disabled={isSubmitting}

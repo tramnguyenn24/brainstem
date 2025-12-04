@@ -7,7 +7,6 @@ module.exports = new EntitySchema({
     id: { type: Number, primary: true, generated: true },
     name: { type: String },
     status: { type: String, nullable: true, default: 'running' },
-    channelId: { name: 'channel_id', type: Number, nullable: true },
     ownerStaffId: { name: 'owner_staff_id', type: Number, nullable: true },
     budget: { type: 'numeric', nullable: true },
     spend: { type: 'numeric', nullable: true },

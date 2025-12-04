@@ -32,7 +32,6 @@ const Page = () => {
   const [editForm, setEditForm] = useState({
     name: '',
     status: 'running',
-    channelId: null,
     ownerStaffId: null,
     budget: '0',
     spend: '0',
@@ -48,6 +47,7 @@ const Page = () => {
   const [sortBy, setSortBy] = useState("");
   const [sortDirection, setSortDirection] = useState("desc");
   const [exporting, setExporting] = useState(false);
+  const [editCampaignChannels, setEditCampaignChannels] = useState([]);
 
 
   // Lấy tham số từ URL
@@ -318,13 +318,37 @@ const Page = () => {
     setEditForm({
       name: campaign.name || '',
       status: campaign.status || 'running',
-      channelId: campaign.channelId || null,
       ownerStaffId: campaign.ownerStaffId || null,
       budget: campaign.budget ? String(campaign.budget) : '0',
       spend: campaign.spend ? String(campaign.spend) : '0',
       roi: campaign.roi ? String(campaign.roi) : '0'
     });
+
+    // Load existing channels
+    if (campaign.channels && campaign.channels.length > 0) {
+      setEditCampaignChannels(campaign.channels.map(ch => ({
+        channelId: ch.channelId || ch.id,
+        cost: ch.cost || 0
+      })));
+    } else {
+      setEditCampaignChannels([]);
+    }
+
     setShowEditModal(true);
+  };
+
+  const handleEditAddChannel = () => {
+    setEditCampaignChannels([...editCampaignChannels, { channelId: '', cost: 0 }]);
+  };
+
+  const handleEditRemoveChannel = (index) => {
+    setEditCampaignChannels(editCampaignChannels.filter((_, i) => i !== index));
+  };
+
+  const handleEditChannelChange = (index, field, value) => {
+    const updated = [...editCampaignChannels];
+    updated[index] = { ...updated[index], [field]: value };
+    setEditCampaignChannels(updated);
   };
 
   const handleEditSubmit = async (e) => {
@@ -342,14 +366,22 @@ const Page = () => {
     try {
       toast.loading("Đang cập nhật chiến dịch...", { id: "edit-campaign" });
 
+      // Prepare channels data
+      const channelsData = editCampaignChannels
+        .filter(ch => ch.channelId)
+        .map(ch => ({
+          channelId: Number(ch.channelId),
+          cost: Number(ch.cost) || 0
+        }));
+
       const response = await campaignService.updateCampaign(selectedCampaign.id, {
         name: editForm.name,
         status: editForm.status,
-        channelId: editForm.channelId ? Number(editForm.channelId) : null,
         ownerStaffId: editForm.ownerStaffId ? Number(editForm.ownerStaffId) : null,
         budget: editForm.budget ? Number(editForm.budget) : 0,
         spend: editForm.spend ? Number(editForm.spend) : 0,
-        roi: editForm.roi ? Number(editForm.roi) : 0
+        roi: editForm.roi ? Number(editForm.roi) : 0,
+        channels: channelsData
       });
 
       // Kiểm tra lỗi từ response
@@ -849,18 +881,6 @@ const Page = () => {
                 </select>
               </div>
               <div className={Style.formGroup}>
-                <label>Kênh:</label>
-                <select
-                  value={editForm.channelId || ''}
-                  onChange={(e) => setEditForm({ ...editForm, channelId: e.target.value ? Number(e.target.value) : null })}
-                >
-                  <option value="">Chọn kênh</option>
-                  {channels.map(channel => (
-                    <option key={channel.id} value={channel.id}>{channel.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div className={Style.formGroup}>
                 <label>Người phụ trách:</label>
                 <select
                   value={editForm.ownerStaffId || ''}
@@ -900,6 +920,72 @@ const Page = () => {
                   min="0"
                 />
               </div>
+
+              {/* Kênh truyền thông */}
+              <div className={Style.formGroup}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <label>Kênh truyền thông:</label>
+                  <button
+                    type="button"
+                    onClick={handleEditAddChannel}
+                    style={{
+                      padding: '6px 12px',
+                      background: '#5d57c9',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '5px',
+                      cursor: 'pointer',
+                      fontSize: '12px'
+                    }}
+                  >
+                    + Thêm kênh
+                  </button>
+                </div>
+
+                {editCampaignChannels.map((channel, index) => (
+                  <div key={index} style={{ display: 'flex', gap: '10px', marginBottom: '10px', alignItems: 'center' }}>
+                    <select
+                      value={channel.channelId}
+                      onChange={(e) => handleEditChannelChange(index, 'channelId', e.target.value)}
+                      style={{ flex: 1, padding: '10px', borderRadius: '5px', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)' }}
+                    >
+                      <option value="">Chọn kênh</option>
+                      {channels.map(ch => (
+                        <option key={ch.id} value={ch.id}>{ch.name}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="number"
+                      placeholder="Chi phí (VNĐ)"
+                      value={channel.cost}
+                      onChange={(e) => handleEditChannelChange(index, 'cost', e.target.value)}
+                      min="0"
+                      style={{ width: '150px', padding: '10px', borderRadius: '5px', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleEditRemoveChannel(index)}
+                      style={{
+                        padding: '10px 15px',
+                        background: '#dc3545',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '5px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Xóa
+                    </button>
+                  </div>
+                ))}
+
+                {editCampaignChannels.length === 0 && (
+                  <small style={{ color: 'var(--textSoft)', fontSize: '12px' }}>
+                    Chưa có kênh nào. Nhấn "Thêm kênh" để thêm kênh truyền thông.
+                  </small>
+                )}
+              </div>
+
               <div className={Style.modalButtons}>
                 <button type="submit" className={Style.saveButton}>Lưu thay đổi</button>
                 <button
