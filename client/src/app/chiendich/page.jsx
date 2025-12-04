@@ -279,6 +279,15 @@ const Page = () => {
   };
 
   const handleDateFilterChange = () => {
+    // Validate date range
+    if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+      toast.error('Ngày bắt đầu không được lớn hơn ngày kết thúc!', {
+        duration: 3000,
+        position: 'top-center'
+      });
+      return;
+    }
+
     updateFilters({
       startDate: startDate || undefined,
       endDate: endDate || undefined
