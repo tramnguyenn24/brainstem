@@ -16,6 +16,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
  * @param {string} props.yAxisLabel - Y-axis label
  * @param {number} props.height - Chart height (default: 400)
  * @param {Object} props.colors - Color configuration
+ * @param {(e: any) => void} [props.onLegendClick] - Optional legend click handler
+ * @param {Array} [props.selectedCampaigns] - Optional filter of selected campaign keys
  */
 export const StackedBarChartCard = ({
   data = [],
@@ -29,7 +31,9 @@ export const StackedBarChartCard = ({
     primary: '#4ecdc4',
     secondary: '#727cf5',
     tertiary: '#f9ca24'
-  }
+  },
+  onLegendClick,
+  selectedCampaigns = []
 }) => {
   // Default bars if not provided
   const barsConfig = bars.length > 0 ? bars : [
@@ -88,18 +92,28 @@ export const StackedBarChartCard = ({
             labelStyle={{ color: '#9ca3af' }}
           />
           <Legend
-            wrapperStyle={{ color: '#dee2e6', paddingTop: '20px' }}
+            wrapperStyle={{ color: '#dee2e6', paddingTop: '20px', cursor: onLegendClick ? 'pointer' : 'default' }}
+            onClick={(e) => {
+              if (onLegendClick) {
+                onLegendClick(e);
+              }
+            }}
           />
-          {barsConfig.map((bar, index) => (
-            <Bar
-              key={bar.dataKey || index}
-              dataKey={bar.dataKey}
-              name={bar.name || bar.dataKey}
-              stackId={bar.stackId || 'stack'}
-              fill={bar.color || colors.primary}
-              radius={index === barsConfig.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]}
-            />
-          ))}
+          {barsConfig.map((bar, index) => {
+            const isSelected = selectedCampaigns.length === 0 || selectedCampaigns.includes(bar.dataKey);
+            return (
+              <Bar
+                key={bar.dataKey || index}
+                dataKey={bar.dataKey}
+                name={bar.name || bar.dataKey}
+                stackId={bar.stackId || 'stack'}
+                fill={isSelected ? (bar.color || colors.primary) : '#6b7280'}
+                opacity={isSelected ? 1 : 0.3}
+                radius={index === barsConfig.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]}
+                style={{ cursor: onLegendClick ? 'pointer' : 'default' }}
+              />
+            );
+          })}
         </BarChart>
       </ResponsiveContainer>
     </div>

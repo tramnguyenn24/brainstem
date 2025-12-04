@@ -16,7 +16,7 @@ const buildQueryString = (options = {}) => {
   const params = new URLSearchParams();
   params.append('page', page.toString());
   params.append('size', size.toString());
-  
+
   if (search) params.append('search', search);
   if (status) params.append('status', status);
   if (sortBy) params.append('sortBy', sortBy);
@@ -117,6 +117,18 @@ export const formService = {
       return data;
     } catch (error) {
       console.error('Error submitting form:', error);
+      throw error;
+    }
+  },
+
+  checkPhone: async phone => {
+    try {
+      const { data } = await apiRequest(`${API_BASE_URL}/api/leads/check-phone?phone=${phone}`, {
+        method: 'GET'
+      });
+      return data;
+    } catch (error) {
+      console.error('Error checking phone:', error);
       throw error;
     }
   }

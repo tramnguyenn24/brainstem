@@ -25,7 +25,7 @@ const FormEmbedPage = () => {
       setLoading(true);
       const formData = await formService.getFormById(formId);
       setForm(formData);
-      
+
       // Initialize form data với giá trị rỗng
       const initialData = {};
       if (formData.fields && Array.isArray(formData.fields)) {
@@ -58,45 +58,80 @@ const FormEmbedPage = () => {
     }
   };
 
+
+
+  const handleBlur = async (fieldId, value, type) => {
+    if (type === 'tel' && value && /^[0-9]{10,11}$/.test(value.replace(/\s/g, ''))) {
+      try {
+        const result = await formService.checkPhone(value);
+        if (result.exists) {
+          setErrors(prev => ({
+            ...prev,
+            [fieldId]: 'Số điện thoại đã tồn tại trong hệ thống'
+          }));
+        }
+      } catch (err) {
+        console.error('Error checking phone:', err);
+      }
+    }
+  };
+
   const validateForm = () => {
     const newErrors = {};
-    
+
     if (!form || !form.fields) return true;
-    
+
     form.fields.forEach(field => {
       const fieldId = field.id || field.label?.toLowerCase().replace(/\s+/g, '');
       const value = formData[fieldId];
-      
+
       if (field.required && (!value || value.trim() === '')) {
         newErrors[fieldId] = `${field.label} là bắt buộc`;
       }
-      
+
       if (field.type === 'email' && value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
         newErrors[fieldId] = 'Email không hợp lệ';
       }
-      
+
       if (field.type === 'tel' && value && !/^[0-9]{10,11}$/.test(value.replace(/\s/g, ''))) {
         newErrors[fieldId] = 'Số điện thoại không hợp lệ';
       }
     });
-    
+
+    // Kiểm tra lỗi trùng số điện thoại từ errors state
+    Object.keys(errors).forEach(key => {
+      if (errors[key]) {
+        newErrors[key] = errors[key];
+      }
+    });
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
+    // Kiểm tra lỗi trùng số điện thoại
+    const hasPhoneError = Object.keys(errors).some(key =>
+      errors[key] && errors[key].includes('tồn tại')
+    );
+
+    if (hasPhoneError) {
+      toast.error('Số điện thoại đã tồn tại trong hệ thống. Vui lòng kiểm tra lại!');
+      return;
+    }
+
     if (!validateForm()) {
       toast.error('Vui lòng điền đầy đủ thông tin bắt buộc');
       return;
     }
-    
+
     setSubmitting(true);
-    
+
     try {
       const response = await formService.submitForm(formId, { data: formData });
-      
+
       if (response && response.success) {
         toast.success('Đã gửi form thành công! Cảm ơn bạn đã đăng ký.');
         // Reset form
@@ -121,6 +156,7 @@ const FormEmbedPage = () => {
     const fieldId = field.id || field.label?.toLowerCase().replace(/\s+/g, '');
     const value = formData[fieldId] || '';
     const error = errors[fieldId];
+    /** @type {any} */
     const fieldStyle = {
       '--primary-color': form?.settings?.mauSac || '#5d57c9'
     };
@@ -140,6 +176,7 @@ const FormEmbedPage = () => {
               type={field.type}
               value={value}
               onChange={(e) => handleChange(fieldId, e.target.value)}
+              onBlur={(e) => handleBlur(fieldId, e.target.value, field.type)}
               placeholder={field.placeholder || ''}
               required={field.required}
               className={`${styles.input} ${error ? styles.inputError : ''}`}
@@ -240,6 +277,7 @@ const FormEmbedPage = () => {
     );
   }
 
+  /** @type {any} */
   const formStyle = {
     '--primary-color': form.settings?.mauSac || '#5d57c9'
   };
@@ -250,14 +288,14 @@ const FormEmbedPage = () => {
         {form.settings?.hienThiTieuDe && form.name && (
           <h1 className={styles.title}>{form.name}</h1>
         )}
-        
+
         {form.settings?.hienThiMoTa && form.description && (
           <p className={styles.description}>{form.description}</p>
         )}
 
         <form onSubmit={handleSubmit} className={styles.form}>
           {form.fields && form.fields.map(field => renderField(field))}
-          
+
           <div className={styles.buttonGroup}>
             <button
               type="submit"
@@ -266,7 +304,7 @@ const FormEmbedPage = () => {
             >
               {submitting ? 'Đang gửi...' : (form.settings?.nutSubmit || 'Gửi')}
             </button>
-            
+
             {form.settings?.nutReset && (
               <button
                 type="reset"

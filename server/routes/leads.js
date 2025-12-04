@@ -3,6 +3,7 @@ const ctrl = require('../controllers/leadsController');
 
 const router = express.Router();
 
+router.get('/check-phone', ctrl.checkPhone);
 router.get('/', ctrl.getLeads);
 router.get('/summary', ctrl.getLeadSummary);
 router.get('/:id', ctrl.getLeadById);

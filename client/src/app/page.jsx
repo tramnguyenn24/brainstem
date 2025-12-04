@@ -18,6 +18,7 @@ const Dashboard = () => {
   const [error, setError] = useState(null);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [selectedCampaigns, setSelectedCampaigns] = useState([]); // Chiến dịch được chọn trong chart
 
   // Bộ lọc phía client (chỉ lọc trên dữ liệu đã fetch sẵn)
   const [campaignSearch, setCampaignSearch] = useState('');
@@ -194,8 +195,63 @@ const Dashboard = () => {
   const charts = dashboardStats?.charts || {};
   const newStudentsByCampaign = charts.newStudentsByCampaign || [];
   const newStudentsByMonth = charts.newStudentsByMonth || [];
+  const newStudentsByCampaignMonth = charts.newStudentsByCampaignMonth || [];
   const roiByCampaign = charts.roiByCampaign || [];
   const channelStats = charts.channelStats || [];
+  
+  // Lấy danh sách tất cả campaign names từ newStudentsByCampaignMonth để tạo dynamic bars
+  const campaignNames = new Set();
+  newStudentsByCampaignMonth.forEach(monthData => {
+    Object.keys(monthData).forEach(key => {
+      if (key !== 'month') {
+        campaignNames.add(key);
+      }
+    });
+  });
+  const campaignNamesArray = Array.from(campaignNames);
+  
+  // Tạo màu sắc cho các campaign (sử dụng palette)
+  const campaignColors = [
+    '#727cf5', '#4ecdc4', '#f9ca24', '#f5576c', '#667eea', 
+    '#764ba2', '#fa709a', '#fee140', '#4facfe', '#00f2fe'
+  ];
+  
+  // Tạo bars config cho StackedBarChartCard (tất cả campaigns)
+  const allCampaignBars = campaignNamesArray.map((campaignName, index) => ({
+    dataKey: campaignName,
+    name: campaignName,
+    color: campaignColors[index % campaignColors.length],
+    stackId: 'total'
+  }));
+
+  // Handler khi click vào legend - chỉ hiển thị campaign được click
+  const handleLegendClick = (e) => {
+    const campaignName = e.dataKey;
+    if (!campaignName) return;
+    
+    // Nếu đã chọn campaign này, bỏ chọn (hiển thị tất cả)
+    if (selectedCampaigns.length === 1 && selectedCampaigns[0] === campaignName) {
+      setSelectedCampaigns([]);
+    } else {
+      // Chỉ hiển thị campaign được click
+      setSelectedCampaigns([campaignName]);
+    }
+  };
+
+  // Nếu có selectedCampaigns, chỉ hiển thị các campaign được chọn
+  const filteredCampaignNames = selectedCampaigns.length > 0 
+    ? selectedCampaigns
+    : campaignNamesArray;
+  
+  const campaignBars = filteredCampaignNames.map((campaignName) => {
+    const originalIndex = campaignNamesArray.indexOf(campaignName);
+    return {
+      dataKey: campaignName,
+      name: campaignName,
+      color: campaignColors[originalIndex % campaignColors.length],
+      stackId: 'total'
+    };
+  });
 
   // Áp dụng bộ lọc phía client (không dùng hook để tránh cảnh báo Hooks)
   const filteredCampaigns = (() => {
@@ -384,28 +440,63 @@ const Dashboard = () => {
 
         {/* Charts Section */}
         <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(500px, 1fr))', gap: '24px', marginBottom: 32}}>
-            {/* Chart 1: New Students by Campaign (Bar) */}
-            {newStudentsByCampaign.length > 0 && (
-              <BarChartCard
-                title="HV mới theo Chiến dịch"
-                data={newStudentsByCampaign.map(c => ({
-                  name: c.name,
-                  'HV mới': c.newStudentsCount
-                }))}
-                dataKey="name"
-                bars={[{
-                  dataKey: 'HV mới',
-                  name: 'HV mới',
-                    color: '#727cf5'
-                  }]}
-                xAxisLabel="Chiến dịch"
-                yAxisLabel="Số lượng"
-                height={400}
-                colors={{ primary: '#727cf5' }}
-                hideXAxisLabels={true}
-                yAxisFormatter={undefined}
-                tooltipFormatter={undefined}
+            {/* Chart 1: New Students by Campaign & Month (Stacked Bar) */}
+            {newStudentsByCampaignMonth.length > 0 && campaignBars.length > 0 && (
+              <div style={{
+                background: 'linear-gradient(135deg, #1f2937 0%, #374151 100%)',
+                border: '1px solid #4b5563',
+                borderRadius: '16px',
+                padding: '24px'
+              }}>
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
+                  <h3 style={{
+                    fontSize: '1.25rem',
+                    fontWeight: 600,
+                    margin: 0,
+                    color: '#dee2e6'
+                  }}>
+                    HV mới theo Chiến dịch và Tháng
+                  </h3>
+                  {selectedCampaigns.length > 0 && (
+                    <button
+                      onClick={() => setSelectedCampaigns([])}
+                      style={{
+                        padding: '6px 12px',
+                        background: '#727cf5',
+                        border: 'none',
+                        borderRadius: '6px',
+                        color: 'white',
+                        fontSize: '0.875rem',
+                        cursor: 'pointer',
+                        fontWeight: 500,
+                        transition: 'background 0.2s'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = '#5b64d4'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = '#727cf5'}
+                    >
+                      Hiển thị tất cả
+                    </button>
+                  )}
+                </div>
+                <StackedBarChartCard
+                  data={newStudentsByCampaignMonth.map(monthData => {
+                    const dataPoint = { name: monthData.month };
+                    // Thêm tất cả campaigns vào data (để legend hoạt động đúng)
+                    campaignNamesArray.forEach(campaignName => {
+                      dataPoint[campaignName] = monthData[campaignName] || 0;
+                    });
+                    return dataPoint;
+                  })}
+                  dataKey="name"
+                  bars={allCampaignBars} // Luôn truyền tất cả bars để legend hiển thị đầy đủ
+                  xAxisLabel="Tháng"
+                  yAxisLabel="Số lượng"
+                  height={400}
+                  colors={{ primary: '#727cf5' }}
+                  onLegendClick={handleLegendClick}
+                  selectedCampaigns={selectedCampaigns}
                 />
+              </div>
             )}
 
             {/* Chart 2: New Students by Month (Line) */}
@@ -566,172 +657,6 @@ const Dashboard = () => {
           )}
           </div>
         </div>
-
-      {/* Featured Campaigns & Live Sessions */}
-      <div className={styles.chartsContainer} style={{marginTop: '48px', gap: '24px'}}>
-        {/* Featured campaigns */}
-        <div className={styles.chartCard} style={{
-          background: 'linear-gradient(135deg, #1f2937 0%, #374151 100%)',
-          border: '1px solid #4b5563',
-          borderRadius: '16px'
-        }}>
-          <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px'}}>
-            <h2 style={{fontSize: '1.5rem', fontWeight: '600', margin: 0, color: '#dee2e6'}}>📈 Chiến dịch nổi bật</h2>
-            <Link href="/chiendich" style={{
-              fontSize: '0.875rem',
-              color: '#727cf5',
-              textDecoration: 'none',
-              fontWeight: 500
-            }}>Xem tất cả →</Link>
-          </div>
-          <div style={{display:'grid', gap:16}}>
-            {featuredCampaigns.length > 0 ? featuredCampaigns.map(campaign => {
-              const getStatusColor = (status) => {
-                switch(status) {
-                  case 'running': return '#4ecdc4';
-                  case 'paused': return '#f9ca24';
-                  case 'completed': return '#6c5ce7';
-                  default: return '#8391a2';
-                }
-              };
-              
-              const getStatusText = (status) => {
-                switch(status) {
-                  case 'running': return 'Đang chạy';
-                  case 'paused': return 'Tạm dừng';
-                  case 'completed': return 'Hoàn thành';
-                  default: return status || 'N/A';
-                }
-              };
-              
-              const revenueChange = campaign.changes?.revenue || 0;
-              const newStudentsChange = campaign.changes?.newStudents || 0;
-              
-              return (
-                <div 
-                  key={campaign.id} 
-                  style={{
-                    display:'flex', 
-                    alignItems:'center', 
-                    gap:16,
-                    padding: '16px',
-                    background: '#1f2a44',
-                    borderRadius: '12px',
-                    border: '1px solid #2b3a5b',
-                    transition: 'all 0.3s ease',
-                    cursor: 'pointer'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateX(8px)';
-                    e.currentTarget.style.borderColor = '#4ecdc4';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateX(0)';
-                    e.currentTarget.style.borderColor = '#2b3a5b';
-                  }}
-                >
-                  <div style={{
-                    fontSize: '2.5rem',
-                    width: '64px',
-                    height: '64px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    background: '#26324a',
-                    borderRadius: '12px'
-                  }}>
-                    📊
-                  </div>
-                  <div style={{flex: 1}}>
-                    <div style={{fontWeight: 700, fontSize: '1.1rem', marginBottom: '4px', color: '#dee2e6'}}>
-                      {campaign.name || 'N/A'}
-                    </div>
-                    <div className={styles.cardSubtext} style={{fontSize: '0.95rem', marginBottom: '4px'}}>
-                      Trạng thái: <span style={{color: getStatusColor(campaign.status)}}>{getStatusText(campaign.status)}</span>
-                    </div>
-                    <div style={{display: 'flex', gap: '16px', fontSize: '0.85rem', flexWrap: 'wrap'}}>
-                      {campaign.roi !== null && campaign.roi !== undefined && (
-                        <div className={styles.cardSubtext} style={{color: '#4ecdc4'}}>
-                          💰 ROI: {Number(campaign.roi).toFixed(2)}%
-                        </div>
-                      )}
-                      {campaign.revenue > 0 && (
-                        <div className={styles.cardSubtext} style={{color: '#f9ca24'}}>
-                          💵 {formatCurrency(campaign.revenue)}
-                        </div>
-                      )}
-                      {revenueChange !== 0 && (
-                        <div className={styles.cardSubtext} style={{color: revenueChange > 0 ? '#4ade80' : '#ef4444'}}>
-                          {revenueChange > 0 ? '↗' : '↘'} {Math.abs(revenueChange)}% doanh thu
-                        </div>
-                      )}
-                      {newStudentsChange !== 0 && (
-                        <div className={styles.cardSubtext} style={{color: newStudentsChange > 0 ? '#4ade80' : '#ef4444'}}>
-                          {newStudentsChange > 0 ? '↗' : '↘'} {Math.abs(newStudentsChange)}% học viên
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            }) : (
-              <p style={{color: '#8391a2', textAlign: 'center', padding: '20px'}}>Chưa có chiến dịch nổi bật</p>
-            )}
-          </div>
-        </div>
-
-        {/* Upcoming live sessions */}
-        <div className={styles.chartCard} style={{
-          background: 'linear-gradient(135deg, #1f2937 0%, #374151 100%)',
-          border: '1px solid #4b5563',
-          borderRadius: '16px'
-        }}>
-          <h2 style={{marginBottom: '24px', fontSize: '1.5rem', fontWeight: '600', margin: 0, color: '#dee2e6'}}>📅 Sự kiện sắp diễn ra</h2>
-          <div style={{display:'grid', gap:12}}>
-            {[
-              { id: 'ls1', title: 'Speaking Club: Small Talk như người bản xứ', time: 'Tối Thứ 4 • 19:30', host: 'Ms. Linh' },
-              { id: 'ls2', title: 'IELTS Writing Task 2: Idea → Outline → Essay', time: 'Chiều Thứ 7 • 15:00', host: 'Mr. David' },
-              { id: 'ls3', title: 'Email công việc: Tone & Structure', time: 'Tối Thứ 5 • 20:00', host: 'Ms. Hạnh' }
-            ].map(s => (
-              <div 
-                key={s.id} 
-                style={{
-                  display:'flex', 
-                  flexDirection: 'column',
-                  gap: 8,
-                  border:'2px solid #2b3a5b', 
-                  padding:'16px', 
-                  borderRadius:'12px',
-                  background: '#1f2a44',
-                  transition: 'all 0.3s ease',
-                  cursor: 'pointer'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = '#f9ca24';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(249, 202, 36, 0.2)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = '#2b3a5b';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
-              >
-                <div style={{fontWeight: 700, fontSize: '1.05rem', color: '#f9ca24'}}>
-                  {s.title}
-                </div>
-                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8}}>
-                  <div className={styles.cardSubtext} style={{fontSize: '0.9rem'}}>
-                    👤 Host: <span style={{color: '#4ecdc4'}}>{s.host}</span>
-                  </div>
-                  <div className={styles.cardSubtext} style={{fontSize: '0.9rem', color: '#ff6b6b'}}>
-                    ⏰ {s.time}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
       {/* Recent Students */}
       <div className={styles.detailsSection} style={{marginTop: 48}}>
         <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, gap: 16, flexWrap: 'wrap'}}>
