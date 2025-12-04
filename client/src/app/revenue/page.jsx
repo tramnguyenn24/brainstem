@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { statisticService } from '../api/statistic/statisticService';
+import { courseService } from '../api/course/courseService';
 import styles from './revenue.module.css';
 import { BarChartCard } from '../components/charts';
 import toast from "react-hot-toast";
@@ -17,6 +18,7 @@ const getErrorMessage = (error, defaultMessage) => {
 
 const RevenuePage = () => {
   const [statistics, setStatistics] = useState(null);
+  const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [exporting, setExporting] = useState(false);
@@ -31,6 +33,7 @@ const RevenuePage = () => {
 
   useEffect(() => {
     fetchStatistics();
+    fetchCourses();
   }, [dateRange, period]);
 
   const fetchStatistics = async () => {
@@ -64,6 +67,25 @@ const RevenuePage = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCourses = async () => {
+    try {
+      const response = await courseService.getCourses({ page: 1, size: 1000 });
+
+      if (response && (response.code >= 400 || response.error || response.status >= 400)) {
+        console.error("Error fetching courses:", response);
+        return;
+      }
+
+      if (response?.items && Array.isArray(response.items)) {
+        setCourses(response.items);
+      } else if (Array.isArray(response)) {
+        setCourses(response);
+      }
+    } catch (err) {
+      console.error('Error fetching courses:', err);
     }
   };
 
@@ -244,7 +266,7 @@ const RevenuePage = () => {
             <div className={styles.cardIcon}>📚</div>
             <div className={styles.cardContent}>
               <h3>Khóa học</h3>
-              <p className={styles.cardNumber}>{statistics?.data?.totalCourses || 0}</p>
+              <p className={styles.cardNumber}>{courses.length || 0}</p>
               <span className={styles.cardSubtext}>Tổng số khóa học</span>
             </div>
           </div>

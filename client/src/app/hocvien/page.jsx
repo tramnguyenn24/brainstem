@@ -42,7 +42,7 @@ const Page = () => {
   });
   const [showViewModal, setShowViewModal] = useState(false);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  
+
   // Statistics state
   const [statistics, setStatistics] = useState({
     total: 0,
@@ -53,12 +53,12 @@ const Page = () => {
     startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0]
   });
-  
+
   // Lấy tham số từ URL
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const { replace } = useRouter();
-  
+
   // Lấy trang hiện tại từ URL (API bắt đầu từ 1)
   const currentPage = parseInt(searchParams.get("page") || "1");
 
@@ -114,7 +114,7 @@ const Page = () => {
   // Cập nhật bộ lọc vào URL và quay về trang đầu tiên
   const updateFilters = (newFilters) => {
     const params = new URLSearchParams(searchParams);
-    
+
     // Cập nhật các tham số
     Object.entries(newFilters).forEach(([key, value]) => {
       if (value) {
@@ -123,10 +123,10 @@ const Page = () => {
         params.delete(key);
       }
     });
-    
+
     // Khi thay đổi bộ lọc, quay về trang đầu tiên
     params.set("page", "1");
-    
+
     // Cập nhật URL
     replace(`${pathname}?${params}`);
   };
@@ -141,18 +141,18 @@ const Page = () => {
         status: statusFilter,
         campaignName: campaignNameFilter
       });
-      
+
       if (response && (response.code >= 400 || response.error || response.status >= 400)) {
         console.error("Error fetching statistics:", response);
         return;
       }
-      
+
       // Nếu có filter thời gian, dùng total và newStudentsCount (đã lọc theo filter + thời gian)
       // Nếu không có filter thời gian, dùng totalAll và newStudentsCountAll (đã lọc theo filter, không giới hạn thời gian)
       // Cả hai đều đã được lọc theo search/status/campaignName
       const hasDateFilter = dateRange.startDate || dateRange.endDate;
       setStatistics({
-        total: hasDateFilter 
+        total: hasDateFilter
           ? (response?.total || 0)  // Có filter thời gian: dùng total (đã lọc theo filter + thời gian)
           : (response?.totalAll || response?.total || 0), // Không có filter thời gian: dùng totalAll (đã lọc theo filter)
         newStudentsCount: hasDateFilter
@@ -169,18 +169,18 @@ const Page = () => {
   const fetchStudents = async (page, size, search = "", status = "", campaignName = "") => {
     try {
       setLoading(true);
-      const response = await studentService.getStudents({ 
-        page, 
-        size, 
-        search, 
+      const response = await studentService.getStudents({
+        page,
+        size,
+        search,
         status,
         campaignName,
         sortBy: 'createdAt',
         sortDirection: 'desc'
       });
-      
+
       console.log("API Response (Students):", response); // Debug thông tin API trả về
-      
+
       // Kiểm tra lỗi từ response
       if (response && (response.code >= 400 || response.error || response.status >= 400)) {
         const errorMessage = getErrorMessage(response, "Không thể tải danh sách học viên");
@@ -191,11 +191,11 @@ const Page = () => {
         setStudents([]);
         return;
       }
-      
+
       // Kiểm tra và xử lý dữ liệu từ API
       if (response.items && Array.isArray(response.items)) {
         setStudents(response.items);
-        
+
         // Lưu metadata để sử dụng cho phân trang
         if (response.page !== undefined) {
           setMetadata({
@@ -275,7 +275,7 @@ const Page = () => {
 
   const handleEditSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Validation
     if (!editForm.fullName.trim()) {
       toast.error("Họ tên không được để trống!", {
@@ -284,7 +284,7 @@ const Page = () => {
       });
       return;
     }
-    
+
     if (!editForm.email.trim()) {
       toast.error("Email không được để trống!", {
         duration: 3000,
@@ -292,7 +292,7 @@ const Page = () => {
       });
       return;
     }
-    
+
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(editForm.email)) {
@@ -302,10 +302,10 @@ const Page = () => {
       });
       return;
     }
-    
+
     try {
       toast.loading("Đang cập nhật học viên...", { id: "edit-student" });
-      
+
       const response = await studentService.updateStudent(selectedStudent.id, {
         fullName: editForm.fullName,
         email: editForm.email,
@@ -317,7 +317,7 @@ const Page = () => {
         assignedStaffId: editForm.assignedStaffId,
         newStudent: editForm.newStudent
       });
-      
+
       // Kiểm tra lỗi từ response
       if (response && (response.code >= 400 || response.error || response.status >= 400)) {
         const errorMessage = getErrorMessage(response, "Không thể cập nhật học viên");
@@ -328,13 +328,13 @@ const Page = () => {
         });
         return;
       }
-      
+
       toast.success(`Đã cập nhật học viên "${editForm.fullName}" thành công!`, {
         id: "edit-student",
         duration: 3000,
         position: "top-center"
       });
-      
+
       setShowEditModal(false);
       fetchStudents(currentPage, itemsPerPage, searchFilter, statusFilter, campaignNameFilter);
       fetchStatistics();
@@ -357,9 +357,9 @@ const Page = () => {
   const handleDeleteConfirm = async () => {
     try {
       toast.loading("Đang xóa học viên...", { id: "delete-student" });
-      
+
       const response = await studentService.deleteStudent(selectedStudent.id);
-      
+
       // Kiểm tra lỗi từ response
       if (response && (response.code >= 400 || response.error || response.status >= 400)) {
         const errorMessage = getErrorMessage(response, "Không thể xóa học viên");
@@ -370,13 +370,13 @@ const Page = () => {
         });
         return;
       }
-      
+
       toast.success(`Đã xóa học viên "${selectedStudent.fullName}" thành công!`, {
         id: "delete-student",
         duration: 3000,
         position: "top-center"
       });
-      
+
       setShowDeleteModal(false);
       fetchStudents(currentPage, itemsPerPage, searchFilter, statusFilter, campaignNameFilter);
       fetchStatistics();
@@ -394,7 +394,7 @@ const Page = () => {
   const handleView = async (student) => {
     try {
       const studentDetail = await studentService.getStudentById(student.id);
-      
+
       // Kiểm tra lỗi từ response
       if (studentDetail && (studentDetail.code >= 400 || studentDetail.error || studentDetail.status >= 400)) {
         const errorMessage = getErrorMessage(studentDetail, "Không thể tải chi tiết học viên");
@@ -404,7 +404,7 @@ const Page = () => {
         });
         return;
       }
-      
+
       setSelectedStudent(studentDetail);
       setShowViewModal(true);
     } catch (err) {
@@ -421,7 +421,7 @@ const Page = () => {
 
   return (
     <div className={Style.userr}>
-      
+
       <div className={Style.container}>
         {/* Statistics Cards */}
         <div className={Style.statisticsSection}>
@@ -471,36 +471,39 @@ const Page = () => {
         </div>
 
         <div className={Style.top}>
+          <Suspense fallback={<div>Đang tải...</div>}>
+            <FilterableSearch
+              placeholder="Tìm kiếm theo tên, email, username, hoặc số điện thoại..."
+              onChange={handleSearch}
+              onSearch={handleSearch}
+              value={searchTerm}
+              statusFilter={selectedStatus}
+              onStatusChange={handleStatusChange}
+              statusOptions={[
+                { value: '', label: 'Tất cả trạng thái' },
+                { value: 'active', label: 'Hoạt động' },
+                { value: 'inactive', label: 'Không hoạt động' }
+              ]}
+            />
+          </Suspense>
+          <div className={Style.searchGroup}>
             <Suspense fallback={<div>Đang tải...</div>}>
-                <FilterableSearch 
-                  placeholder="Tìm kiếm theo tên, email, username, hoặc số điện thoại..."
-                onChange={handleSearch} 
-                onSearch={handleSearch} 
-                  value={searchTerm}
-                  statusFilter={selectedStatus}
-                  onStatusChange={handleStatusChange}
-                  statusOptions={[
-                    { value: '', label: 'Tất cả trạng thái' },
-                    { value: 'active', label: 'Hoạt động' },
-                    { value: 'inactive', label: 'Không hoạt động' }
-                  ]}
+              <FilterableSearch
+                placeholder="Tìm kiếm theo tên chiến dịch (CD)..."
+                onChange={handleCampaignNameSearch}
+                onSearch={handleCampaignNameSearch}
+                value={campaignNameSearch}
+                statusFilter={undefined}
+                onStatusChange={undefined}
+                statusOptions={undefined}
               />
             </Suspense>
-            <div className={Style.searchGroup}>
-              <Suspense fallback={<div>Đang tải...</div>}>
-                <FilterableSearch 
-                  placeholder="Tìm kiếm theo tên chiến dịch (CD)..."
-                  onChange={handleCampaignNameSearch} 
-                  onSearch={handleCampaignNameSearch} 
-                  value={campaignNameSearch}
-                />
-              </Suspense>
-            </div>
-            <Link href="/hocvien/add">
-              <button className={Style.addButton}>Thêm mới</button>
-            </Link>
+          </div>
+          <Link href="/hocvien/add">
+            <button className={Style.addButton}>Thêm mới</button>
+          </Link>
         </div>
-      
+
         <table className={Style.table}>
           <thead>
             <tr>
@@ -516,7 +519,7 @@ const Page = () => {
           <tbody>
             {students.length === 0 ? (
               <tr>
-                <td colSpan={7} style={{ textAlign: 'center', padding: '20px', color: 'var(--textSoft)' }}>
+                <td colSpan={8} style={{ textAlign: 'center', padding: '20px', color: 'var(--textSoft)' }}>
                   Không có dữ liệu học viên
                 </td>
               </tr>
@@ -543,19 +546,19 @@ const Page = () => {
                   <td>{student.campaignName || 'N/A'}</td>
                   <td>
                     <div className={Style.buttons}>
-                      <button 
+                      <button
                         className={`${Style.button} ${Style.view}`}
                         onClick={() => handleView(student)}
                       >
                         Xem
                       </button>
-                      <button 
+                      <button
                         className={`${Style.button} ${Style.edit}`}
                         onClick={() => handleEdit(student)}
                       >
                         Sửa
                       </button>
-                      <button 
+                      <button
                         className={`${Style.button} ${Style.delete}`}
                         onClick={() => handleDelete(student)}
                       >
@@ -568,7 +571,7 @@ const Page = () => {
             )}
           </tbody>
         </table>
-      
+
         <div className={Style.darkBg}>
           <Suspense fallback={<div>Đang tải...</div>}>
             <Pagination metadata={metadata || { page: 1, totalPages: 1, count: students.length, totalElements: students.length }} />
@@ -586,7 +589,7 @@ const Page = () => {
                   <input
                     type="text"
                     value={editForm.fullName}
-                    onChange={(e) => setEditForm({...editForm, fullName: e.target.value})}
+                    onChange={(e) => setEditForm({ ...editForm, fullName: e.target.value })}
                     required
                   />
                 </div>
@@ -595,7 +598,7 @@ const Page = () => {
                   <input
                     type="email"
                     value={editForm.email}
-                    onChange={(e) => setEditForm({...editForm, email: e.target.value})}
+                    onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
                     required
                   />
                 </div>
@@ -604,7 +607,7 @@ const Page = () => {
                   <input
                     type="text"
                     value={editForm.phone}
-                    onChange={(e) => setEditForm({...editForm, phone: e.target.value})}
+                    onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
                     required
                   />
                 </div>
@@ -612,7 +615,7 @@ const Page = () => {
                   <label>Trạng thái:</label>
                   <select
                     value={editForm.status}
-                    onChange={(e) => setEditForm({...editForm, status: e.target.value})}
+                    onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
                     required
                   >
                     <option value="active">Hoạt động</option>
@@ -623,7 +626,7 @@ const Page = () => {
                   <label>Trạng thái đăng ký:</label>
                   <select
                     value={editForm.enrollmentStatus}
-                    onChange={(e) => setEditForm({...editForm, enrollmentStatus: e.target.value})}
+                    onChange={(e) => setEditForm({ ...editForm, enrollmentStatus: e.target.value })}
                     required
                   >
                     <option value="pending">Chờ xử lý</option>
@@ -636,13 +639,13 @@ const Page = () => {
                   <input
                     type="checkbox"
                     checked={editForm.newStudent}
-                    onChange={(e) => setEditForm({...editForm, newStudent: e.target.checked})}
+                    onChange={(e) => setEditForm({ ...editForm, newStudent: e.target.checked })}
                   />
                 </div>
                 <div className={Style.modalButtons}>
                   <button type="submit" className={Style.saveButton}>Lưu thay đổi</button>
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     className={Style.cancelButton}
                     onClick={() => setShowEditModal(false)}
                   >
@@ -661,13 +664,13 @@ const Page = () => {
               <h2>Xóa học viên</h2>
               <p>Bạn có chắc chắn muốn xóa học viên "{selectedStudent?.fullName}"?</p>
               <div className={Style.modalButtons}>
-                <button 
+                <button
                   className={Style.deleteButton}
                   onClick={handleDeleteConfirm}
                 >
                   Xóa
                 </button>
-                <button 
+                <button
                   className={Style.cancelButton}
                   onClick={() => setShowDeleteModal(false)}
                 >
@@ -726,7 +729,7 @@ const Page = () => {
                 </div>
               </div>
               <div className={Style.modalButtons}>
-                <button 
+                <button
                   className={Style.cancelButton}
                   onClick={() => setShowViewModal(false)}
                 >

@@ -254,12 +254,12 @@
 }
 
 .status.active {
-  background-color: #4ecdc4;
+  background-color: #10b981;
   color: #fff;
 }
 
 .status.inactive {
-  background-color: #8391a2;
+  background-color: #ef4444;
   color: #fff;
 }
 

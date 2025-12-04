@@ -4,17 +4,17 @@ const { AppDataSource } = require('../db/data-source');
 exports.getRevenue = async (req, res) => {
   try {
     const { startDate, endDate, period = 'day' } = req.query; // period: 'day', 'week', 'month'
-    
+
     // Parse dates
     const start = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const end = endDate ? new Date(endDate) : new Date();
-    
+
     // Get repositories
     const studentRepo = AppDataSource.getRepository('Student');
     const staffRepo = AppDataSource.getRepository('Staff');
     const campaignRepo = AppDataSource.getRepository('Campaign');
     const leadRepo = AppDataSource.getRepository('Lead');
-    
+
     // Get all students, staff, campaigns, leads
     const [students, staff, campaigns, leads] = await Promise.all([
       studentRepo.find(),
@@ -22,24 +22,23 @@ exports.getRevenue = async (req, res) => {
       campaignRepo.find(),
       leadRepo.find()
     ]);
-    
+
     // Filter by date range if provided
     const filteredStudents = students.filter(s => {
       const createdAt = new Date(s.createdAt);
       return createdAt >= start && createdAt <= end;
     });
-    
+
     // Calculate statistics
     const totalStudents = students.length;
     const totalTeachers = staff.filter(s => s.role === 'teacher' || s.role === 'instructor').length;
-    const totalCourses = campaigns.length; // Assuming campaigns represent courses
     const totalCampaigns = campaigns.length;
     const totalPotentialStudents = leads.length;
-    
+
     // Calculate revenue data grouped by period (day/week/month)
     const revenueData = [];
     const courseRepo = AppDataSource.getRepository('Course');
-    
+
     // Helper function to get period key based on period type
     const getPeriodKey = (date, periodType) => {
       const d = new Date(date);
@@ -57,19 +56,19 @@ exports.getRevenue = async (req, res) => {
       }
       return d.toISOString().split('T')[0];
     };
-    
+
     // Helper to generate all keys between start/end for consistent chart data
     const generatePeriodKeys = (startDate, endDate, periodType) => {
       const keys = [];
       const current = new Date(startDate);
       const endCursor = new Date(endDate);
-      
+
       current.setHours(0, 0, 0, 0);
       endCursor.setHours(0, 0, 0, 0);
-      
+
       while (current <= endCursor) {
         keys.push(getPeriodKey(current, periodType));
-        
+
         if (periodType === 'day') {
           current.setDate(current.getDate() + 1);
         } else if (periodType === 'week') {
@@ -80,10 +79,10 @@ exports.getRevenue = async (req, res) => {
           current.setDate(current.getDate() + 1);
         }
       }
-      
+
       return keys;
     };
-    
+
     // Helper function to format period label
     const formatPeriodLabel = (periodKey, periodType) => {
       if (periodType === 'day') {
@@ -97,14 +96,14 @@ exports.getRevenue = async (req, res) => {
       }
       return periodKey;
     };
-    
+
     // Group students by period
     const periodMap = new Map();
-    
+
     for (const student of filteredStudents) {
       const studentDate = new Date(student.createdAt);
       const periodKey = getPeriodKey(studentDate, period);
-      
+
       if (!periodMap.has(periodKey)) {
         periodMap.set(periodKey, {
           enrollments: 0,
@@ -112,10 +111,10 @@ exports.getRevenue = async (req, res) => {
           date: periodKey
         });
       }
-      
+
       const periodData = periodMap.get(periodKey);
       periodData.enrollments += 1;
-      
+
       // Calculate revenue from course price
       if (student.courseId) {
         const course = await courseRepo.findOne({ where: { id: student.courseId } });
@@ -124,10 +123,10 @@ exports.getRevenue = async (req, res) => {
         }
       }
     }
-    
+
     // Ensure all periods exist between start/end for consistent daily chart
     const periodKeys = generatePeriodKeys(start, end, period);
-    
+
     for (const periodKey of periodKeys) {
       const data = periodMap.get(periodKey) || { enrollments: 0, revenue: 0 };
       revenueData.push({
@@ -136,18 +135,18 @@ exports.getRevenue = async (req, res) => {
         revenue: data.revenue
       });
     }
-    
+
     // Calculate top campaigns by revenue
     // LƯU Ý: phải tôn trọng bộ lọc thời gian (startDate, endDate)
     // nên chỉ dùng các student trong filteredStudents (đã được lọc theo createdAt)
     const campaignRevenueMap = new Map();
-    
+
     for (const campaign of campaigns) {
       let revenue = 0;
-      
+
       // Chỉ lấy học viên của campaign trong khoảng thời gian đã lọc
       const campaignStudents = filteredStudents.filter(s => s.campaignId === campaign.id);
-      
+
       for (const student of campaignStudents) {
         // Nếu student có courseId, lấy giá từ course
         if (student.courseId) {
@@ -161,7 +160,7 @@ exports.getRevenue = async (req, res) => {
           revenue += Number(student.tuitionFee) || 0;
         }
       }
-      
+
       if (revenue > 0) {
         campaignRevenueMap.set(campaign.id, {
           name: campaign.name,
@@ -169,16 +168,16 @@ exports.getRevenue = async (req, res) => {
         });
       }
     }
-    
+
     // Sắp xếp và lấy top campaigns
     const topCampaigns = Array.from(campaignRevenueMap.values())
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 5);
-    
+
     // Calculate total revenue and orders (theo bộ lọc thời gian)
     const totalRevenueFromCampaigns = Array.from(campaignRevenueMap.values())
       .reduce((sum, item) => sum + item.revenue, 0);
-    
+
     const statisticTotal = {
       countOrder: filteredStudents.length,
       // Nếu vì lý do nào đó không tính được theo campaign thì fallback về cộng trực tiếp từ revenueData
@@ -186,12 +185,11 @@ exports.getRevenue = async (req, res) => {
         ? totalRevenueFromCampaigns
         : revenueData.reduce((sum, item) => sum + item.revenue, 0)
     };
-    
+
     res.json({
       data: {
         totalStudents,
         totalTeachers,
-        totalCourses,
         totalCampaigns,
         totalPotentialStudents,
         revenueData,
@@ -212,18 +210,18 @@ exports.getRevenue = async (req, res) => {
 exports.getStatistics = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
-    
+
     // Parse dates
     const start = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const end = endDate ? new Date(endDate) : new Date();
-    
+
     // Get repositories
     const studentRepo = AppDataSource.getRepository('Student');
     const staffRepo = AppDataSource.getRepository('Staff');
     const campaignRepo = AppDataSource.getRepository('Campaign');
     const leadRepo = AppDataSource.getRepository('Lead');
     const channelRepo = AppDataSource.getRepository('Channel');
-    
+
     // Get all data
     const [students, staff, campaigns, leads, channels] = await Promise.all([
       studentRepo.find(),
@@ -232,18 +230,18 @@ exports.getStatistics = async (req, res) => {
       leadRepo.find(),
       channelRepo.find()
     ]);
-    
+
     // Filter by date range if provided
     const filteredStudents = students.filter(s => {
       const createdAt = new Date(s.createdAt);
       return createdAt >= start && createdAt <= end;
     });
-    
+
     const filteredLeads = leads.filter(l => {
       const createdAt = new Date(l.createdAt);
       return createdAt >= start && createdAt <= end;
     });
-    
+
     // Calculate statistics
     const stats = {
       totalStudents: students.length,
@@ -257,19 +255,19 @@ exports.getStatistics = async (req, res) => {
       byEnrollment: {},
       byCampaign: {}
     };
-    
+
     // Group by status
     for (const s of students) {
       const status = s.status || 'active';
       stats.byStatus[status] = (stats.byStatus[status] || 0) + 1;
     }
-    
+
     // Group by enrollment status
     for (const s of students) {
       const enrollment = s.enrollmentStatus || 'pending';
       stats.byEnrollment[enrollment] = (stats.byEnrollment[enrollment] || 0) + 1;
     }
-    
+
     // Group by campaign
     for (const s of students) {
       if (s.campaignId) {
@@ -278,7 +276,7 @@ exports.getStatistics = async (req, res) => {
         stats.byCampaign[campaignName] = (stats.byCampaign[campaignName] || 0) + 1;
       }
     }
-    
+
     res.json(stats);
   } catch (error) {
     console.error('Error getting statistics:', error);
@@ -290,68 +288,68 @@ exports.getStatistics = async (req, res) => {
 exports.getDashboardStats = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
-    
+
     // Parse dates - default to current month
     const now = new Date();
     const end = endDate ? new Date(endDate) : new Date(now.getFullYear(), now.getMonth() + 1, 0);
     const start = startDate ? new Date(startDate) : new Date(now.getFullYear(), now.getMonth(), 1);
-    
+
     // Calculate previous month for comparison
     const prevMonthEnd = new Date(start.getTime() - 1);
     const prevMonthStart = new Date(prevMonthEnd.getFullYear(), prevMonthEnd.getMonth(), 1);
-    
+
     // Get repositories
     const studentRepo = AppDataSource.getRepository('Student');
     const campaignRepo = AppDataSource.getRepository('Campaign');
     const leadRepo = AppDataSource.getRepository('Lead');
     const channelRepo = AppDataSource.getRepository('Channel');
     const courseRepo = AppDataSource.getRepository('Course');
-    
+
     // Get all data
     const [allStudents, allCampaigns, allLeads] = await Promise.all([
       studentRepo.find(),
       campaignRepo.find(),
       leadRepo.find()
     ]);
-    
+
     // Filter current period
     const currentStudents = allStudents.filter(s => {
       const createdAt = new Date(s.createdAt);
       return createdAt >= start && createdAt <= end;
     });
-    
+
     const currentCampaigns = allCampaigns.filter(c => {
       const createdAt = new Date(c.createdAt);
       return createdAt >= start && createdAt <= end;
     });
-    
+
     const currentLeads = allLeads.filter(l => {
       const createdAt = new Date(l.createdAt);
       return createdAt >= start && createdAt <= end;
     });
-    
+
     // Filter previous period
     const prevStudents = allStudents.filter(s => {
       const createdAt = new Date(s.createdAt);
       return createdAt >= prevMonthStart && createdAt <= prevMonthEnd;
     });
-    
+
     const prevCampaigns = allCampaigns.filter(c => {
       const createdAt = new Date(c.createdAt);
       return createdAt >= prevMonthStart && createdAt <= prevMonthEnd;
     });
-    
+
     const prevLeads = allLeads.filter(l => {
       const createdAt = new Date(l.createdAt);
       return createdAt >= prevMonthStart && createdAt <= prevMonthEnd;
     });
-    
+
     // Calculate total revenue from converted students (students with sourceLeadId and courseId)
     // Chỉ tính doanh thu từ học viên được chuyển đổi từ leads và đã đăng ký khóa học
     // Doanh thu được tính theo giá khóa học mà học viên đã đăng ký (course.price)
     let currentRevenue = 0;
     const convertedStudents = currentStudents.filter(s => s.sourceLeadId != null && s.courseId != null);
-    
+
     // Lấy tất cả courseIds cần thiết để query một lần (tối ưu performance)
     const courseIds = [...new Set(convertedStudents.map(s => s.courseId).filter(id => id != null))];
     let courses = [];
@@ -364,7 +362,7 @@ exports.getDashboardStats = async (req, res) => {
       }
     }
     const courseMap = new Map(courses.map(c => [c.id, c]));
-    
+
     for (const student of convertedStudents) {
       if (student.courseId) {
         const course = courseMap.get(student.courseId);
@@ -373,11 +371,11 @@ exports.getDashboardStats = async (req, res) => {
         }
       }
     }
-    
+
     // For previous month, calculate revenue from converted students in previous month
     let prevRevenue = 0;
     const prevConvertedStudents = prevStudents.filter(s => s.sourceLeadId != null && s.courseId != null);
-    
+
     // Lấy tất cả courseIds cần thiết cho previous month
     const prevCourseIds = [...new Set(prevConvertedStudents.map(s => s.courseId).filter(id => id != null))];
     let prevCourses = [];
@@ -390,7 +388,7 @@ exports.getDashboardStats = async (req, res) => {
       }
     }
     const prevCourseMap = new Map(prevCourses.map(c => [c.id, c]));
-    
+
     for (const student of prevConvertedStudents) {
       if (student.courseId) {
         const course = prevCourseMap.get(student.courseId);
@@ -399,72 +397,72 @@ exports.getDashboardStats = async (req, res) => {
         }
       }
     }
-    
-    const revenueChange = prevRevenue > 0 
+
+    const revenueChange = prevRevenue > 0
       ? ((currentRevenue - prevRevenue) / prevRevenue * 100).toFixed(1)
       : currentRevenue > 0 ? 100 : 0;
-    
+
     // Calculate registered students (enrolled)
     const currentRegistered = allStudents.filter(s => {
       const createdAt = new Date(s.createdAt);
       return createdAt >= start && createdAt <= end && s.enrollmentStatus === 'enrolled';
     }).length;
-    
+
     const prevRegistered = allStudents.filter(s => {
       const createdAt = new Date(s.createdAt);
       return createdAt >= prevMonthStart && createdAt <= prevMonthEnd && s.enrollmentStatus === 'enrolled';
     }).length;
-    
+
     const registeredChange = prevRegistered > 0
       ? ((currentRegistered - prevRegistered) / prevRegistered * 100).toFixed(1)
       : currentRegistered > 0 ? 100 : 0;
-    
+
     // Calculate completion rate (students with status 'completed' or enrollmentStatus 'completed')
     const currentCompleted = allStudents.filter(s => {
       const createdAt = new Date(s.createdAt);
-      return createdAt >= start && createdAt <= end && 
-             (s.status === 'completed' || s.enrollmentStatus === 'completed');
+      return createdAt >= start && createdAt <= end &&
+        (s.status === 'completed' || s.enrollmentStatus === 'completed');
     }).length;
-    
+
     const currentTotal = allStudents.filter(s => {
       const createdAt = new Date(s.createdAt);
       return createdAt >= start && createdAt <= end;
     }).length;
-    
+
     const prevCompleted = allStudents.filter(s => {
       const createdAt = new Date(s.createdAt);
-      return createdAt >= prevMonthStart && createdAt <= prevMonthEnd && 
-             (s.status === 'completed' || s.enrollmentStatus === 'completed');
+      return createdAt >= prevMonthStart && createdAt <= prevMonthEnd &&
+        (s.status === 'completed' || s.enrollmentStatus === 'completed');
     }).length;
-    
+
     const prevTotal = allStudents.filter(s => {
       const createdAt = new Date(s.createdAt);
       return createdAt >= prevMonthStart && createdAt <= prevMonthEnd;
     }).length;
-    
+
     const currentCompletionRate = currentTotal > 0 ? (currentCompleted / currentTotal * 100) : 0;
     const prevCompletionRate = prevTotal > 0 ? (prevCompleted / prevTotal * 100) : 0;
     const completionChange = prevCompletionRate > 0
       ? (currentCompletionRate - prevCompletionRate).toFixed(1)
       : currentCompletionRate > 0 ? currentCompletionRate.toFixed(1) : 0;
-    
+
     // Calculate currently studying students (active status)
     const currentStudying = allStudents.filter(s => s.status === 'active').length;
     const prevStudying = allStudents.filter(s => {
       const createdAt = new Date(s.createdAt);
       return createdAt < prevMonthStart && s.status === 'active';
     }).length;
-    
+
     const studyingChange = prevStudying > 0
       ? ((currentStudying - prevStudying) / prevStudying * 100).toFixed(1)
       : currentStudying > 0 ? 100 : 0;
-    
+
     // Get running campaigns (filtered by date range)
     const runningCampaigns = allCampaigns.filter(c => {
       const createdAt = new Date(c.createdAt);
       return c.status === 'running' && createdAt >= start && createdAt <= end;
     });
-    
+
     // Calculate total spent (from campaigns in date range)
     const totalSpent = allCampaigns
       .filter(c => {
@@ -472,26 +470,26 @@ exports.getDashboardStats = async (req, res) => {
         return createdAt >= start && createdAt <= end;
       })
       .reduce((sum, c) => sum + (Number(c.cost) || 0), 0);
-    
+
     // Calculate total potential students (leads in date range)
     const totalPotentialStudents = allLeads.filter(l => {
       const createdAt = new Date(l.createdAt);
       return createdAt >= start && createdAt <= end;
     }).length;
-    
+
     // Calculate total registered students (chỉ đếm students được chuyển đổi từ leads trong khoảng thời gian)
     const totalRegisteredStudents = allStudents.filter(s => {
       const createdAt = new Date(s.createdAt);
       return createdAt >= start && createdAt <= end &&
-             s.enrollmentStatus === 'enrolled' && s.sourceLeadId != null;
+        s.enrollmentStatus === 'enrolled' && s.sourceLeadId != null;
     }).length;
-    
+
     // Calculate conversion rate (leads to enrollment)
     // Chỉ tính từ students được chuyển đổi từ leads trong khoảng thời gian
     const conversionRate = totalPotentialStudents > 0
       ? (totalRegisteredStudents / totalPotentialStudents * 100).toFixed(2)
       : 0;
-    
+
     // Get new students by campaign for chart
     const campaignsWithNewStudents = await Promise.all(
       allCampaigns.map(async (c) => {
@@ -503,7 +501,7 @@ exports.getDashboardStats = async (req, res) => {
         };
       })
     );
-    
+
     // Get new students by month
     const newStudentsByMonth = [];
     const months = [];
@@ -516,7 +514,7 @@ exports.getDashboardStats = async (req, res) => {
         end: monthEnd
       });
     }
-    
+
     for (const month of months) {
       const count = allStudents.filter(s => {
         const createdAt = new Date(s.createdAt);
@@ -561,7 +559,7 @@ exports.getDashboardStats = async (req, res) => {
 
       newStudentsByCampaignMonth.push(row);
     }
-    
+
     // Get ROI by campaign
     const roiByCampaign = await Promise.all(
       allCampaigns.map(async (c) => {
@@ -573,11 +571,11 @@ exports.getDashboardStats = async (req, res) => {
         };
       })
     );
-    
+
     // Get leads and new students by channel
     const leadsByChannel = {};
     const studentsByChannel = {};
-    
+
     for (const lead of allLeads) {
       if (lead.channelId) {
         const channel = await channelRepo.findOne({ where: { id: lead.channelId } });
@@ -585,7 +583,7 @@ exports.getDashboardStats = async (req, res) => {
         leadsByChannel[channelName] = (leadsByChannel[channelName] || 0) + 1;
       }
     }
-    
+
     for (const student of allStudents) {
       if (student.channelId) {
         const channel = await channelRepo.findOne({ where: { id: student.channelId } });
@@ -593,13 +591,13 @@ exports.getDashboardStats = async (req, res) => {
         studentsByChannel[channelName] = (studentsByChannel[channelName] || 0) + 1;
       }
     }
-    
-    const channelStats = Object.keys({...leadsByChannel, ...studentsByChannel}).map(channelName => ({
+
+    const channelStats = Object.keys({ ...leadsByChannel, ...studentsByChannel }).map(channelName => ({
       channel: channelName,
       leads: leadsByChannel[channelName] || 0,
       students: studentsByChannel[channelName] || 0
     }));
-    
+
     res.json({
       summary: {
         totalRevenue: {
@@ -653,14 +651,14 @@ async function calculateCampaignMetrics(campaignId) {
   const studentRepo = AppDataSource.getRepository('Student');
   const leadRepo = AppDataSource.getRepository('Lead');
   const courseRepo = AppDataSource.getRepository('Course');
-  
+
   const [students, leads] = await Promise.all([
     studentRepo.find({ where: { campaignId } }),
     leadRepo.find({ where: { campaignId } })
   ]);
-  
+
   const newStudents = students.filter(s => s.newStudent === true);
-  
+
   // Calculate revenue from course prices
   let revenue = 0;
   for (const student of students) {
@@ -671,7 +669,7 @@ async function calculateCampaignMetrics(campaignId) {
       }
     }
   }
-  
+
   return {
     newStudentsCount: newStudents.length,
     potentialStudentsCount: leads.length,
@@ -685,7 +683,7 @@ async function toEnrichedCampaign(c) {
   const revenue = Number(c.revenue || metrics.revenue || 0);
   const cost = Number(c.cost || 0);
   const roi = cost > 0 ? ((revenue - cost) / cost) * 100 : 0;
-  
+
   return {
     ...c,
     revenue,
@@ -700,42 +698,42 @@ async function toEnrichedCampaign(c) {
 exports.downloadRevenueExport = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
-    
+
     // Parse dates
     const start = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const end = endDate ? new Date(endDate) : new Date();
-    
+
     // Get revenue data (reuse logic from getRevenue)
     const studentRepo = AppDataSource.getRepository('Student');
     const students = await studentRepo.find();
-    
+
     const filteredStudents = students.filter(s => {
       const createdAt = new Date(s.createdAt);
       return createdAt >= start && createdAt <= end;
     });
-    
+
     // Generate CSV
     const csvRows = [];
     csvRows.push('Date,Enrollments,Revenue (VND)');
-    
+
     const daysDiff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
     for (let i = 0; i < daysDiff; i++) {
       const date = new Date(start);
       date.setDate(date.getDate() + i);
       const dateStr = date.toISOString().split('T')[0];
-      
+
       const enrollments = filteredStudents.filter(s => {
         const sDate = new Date(s.createdAt).toISOString().split('T')[0];
         return sDate === dateStr;
       }).length;
-      
+
       const revenue = enrollments * 1000000;
       csvRows.push(`${dateStr},${enrollments},${revenue}`);
     }
-    
+
     const csv = csvRows.join('\n');
     const filename = `revenue_report_${startDate || 'all'}_${endDate || 'all'}.csv`;
-    
+
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.send(csv);

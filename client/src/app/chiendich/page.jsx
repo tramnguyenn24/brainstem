@@ -489,11 +489,10 @@ const Page = () => {
         return;
       }
 
-      // Format data for Excel
-      const dataToExport = response.items.map(item => ({
+      // Format data for Excel - Main campaign sheet
+      const campaignData = response.items.map(item => ({
         'Tên chiến dịch': item.name,
         'Trạng thái': getStatusText(item.status),
-        'Kênh': item.channelName || '',
         'Người phụ trách': item.ownerStaffName || '',
         'Ngân sách': item.budget || 0,
         'Đã chi': item.cost || 0,
@@ -504,13 +503,42 @@ const Page = () => {
           ? ((item.newStudentsCount / item.potentialStudentsCount) * 100).toFixed(2)
           : 0,
         'ROI (%)': item.roi ? Number(item.roi).toFixed(2) : 0,
+        'Số kênh': item.channels?.length || 0,
         'Ngày tạo': item.createdAt ? new Date(item.createdAt).toLocaleDateString('vi-VN') : ''
       }));
 
-      // Create workbook and worksheet
-      const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+      // Format data for Channels detail sheet
+      const channelsData = [];
+      response.items.forEach(campaign => {
+        if (campaign.channels && campaign.channels.length > 0) {
+          campaign.channels.forEach(channel => {
+            channelsData.push({
+              'Tên chiến dịch': campaign.name,
+              'Tên kênh': channel.channelName || '',
+              'Chi phí kênh': channel.cost || 0,
+              'HVTN từ kênh': channel.potentialStudentsCount || 0,
+              'HV mới từ kênh': channel.newStudentsCount || 0,
+              'Doanh thu từ kênh': channel.revenue || 0,
+              'Tỉ lệ chuyển đổi kênh (%)': channel.potentialStudentsCount > 0
+                ? ((channel.newStudentsCount / channel.potentialStudentsCount) * 100).toFixed(2)
+                : 0
+            });
+          });
+        }
+      });
+
+      // Create workbook with multiple sheets
       const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Chiến dịch");
+
+      // Sheet 1: Campaign summary
+      const campaignSheet = XLSX.utils.json_to_sheet(campaignData);
+      XLSX.utils.book_append_sheet(workbook, campaignSheet, "Tổng quan chiến dịch");
+
+      // Sheet 2: Channels detail (only if there are channels)
+      if (channelsData.length > 0) {
+        const channelsSheet = XLSX.utils.json_to_sheet(channelsData);
+        XLSX.utils.book_append_sheet(workbook, channelsSheet, "Chi tiết kênh truyền thông");
+      }
 
       // Generate file name with current date
       const dateStr = new Date().toISOString().split('T')[0];
