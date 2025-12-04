@@ -255,21 +255,6 @@ const AddCampaignPage = () => {
             <option value="completed">Hoàn thành</option>
           </select>
         </div>
-
-        <div className={styles.formGroup}>
-          <label>Kênh:</label>
-          <select
-            name="channelId"
-            value={formData.channelId || ''}
-            onChange={handleChange}
-          >
-            <option value="">Chọn kênh</option>
-            {channels.map(channel => (
-              <option key={channel.id} value={channel.id}>{channel.name}</option>
-            ))}
-          </select>
-        </div>
-
         <div className={styles.formGroup}>
           <label>Người phụ trách:</label>
           <select

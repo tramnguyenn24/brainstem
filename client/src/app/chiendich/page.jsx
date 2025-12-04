@@ -9,6 +9,7 @@ import { staffService } from "../api/staff/staffService";
 import { useSearchParams, usePathname, useRouter } from "next/navigation";
 import LogoutButton from "../components/LogoutButton/LogoutButton";
 import toast from "react-hot-toast";
+import * as XLSX from 'xlsx';
 
 // Utility function để extract error message
 const getErrorMessage = (error, defaultMessage) => {
@@ -33,9 +34,9 @@ const Page = () => {
     status: 'running',
     channelId: null,
     ownerStaffId: null,
-    budget: 0,
-    spend: 0,
-    roi: 0
+    budget: '0',
+    spend: '0',
+    roi: '0'
   });
   const [showViewModal, setShowViewModal] = useState(false);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -46,12 +47,14 @@ const Page = () => {
   const [endDate, setEndDate] = useState("");
   const [sortBy, setSortBy] = useState("");
   const [sortDirection, setSortDirection] = useState("desc");
-  
+  const [exporting, setExporting] = useState(false);
+
+
   // Lấy tham số từ URL
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const { replace } = useRouter();
-  
+
   // Lấy trang hiện tại từ URL (API bắt đầu từ 1)
   const currentPage = parseInt(searchParams.get("page") || "1");
 
@@ -99,13 +102,13 @@ const Page = () => {
           channelService.getChannels({ page: 1, size: 100 }),
           staffService.getStaffMembers({ page: 1, size: 100 })
         ]);
-        
+
         if (channelsResponse && channelsResponse.items) {
           setChannels(channelsResponse.items);
         } else if (Array.isArray(channelsResponse)) {
           setChannels(channelsResponse);
         }
-        
+
         if (staffResponse && staffResponse.items) {
           setStaff(staffResponse.items);
         } else if (Array.isArray(staffResponse)) {
@@ -121,11 +124,11 @@ const Page = () => {
   // Effect khi trang hoặc bộ lọc thay đổi, gọi API để lấy dữ liệu
   useEffect(() => {
     fetchCampaigns(
-      currentPage, 
-      itemsPerPage, 
-      searchFilter, 
-      statusFilter, 
-      sortByFilter, 
+      currentPage,
+      itemsPerPage,
+      searchFilter,
+      statusFilter,
+      sortByFilter,
       sortDirectionFilter,
       startDateFilter,
       endDateFilter
@@ -148,7 +151,7 @@ const Page = () => {
   // Cập nhật bộ lọc vào URL và quay về trang đầu tiên
   const updateFilters = (newFilters) => {
     const params = new URLSearchParams(searchParams);
-    
+
     // Cập nhật các tham số
     Object.entries(newFilters).forEach(([key, value]) => {
       if (value) {
@@ -157,39 +160,39 @@ const Page = () => {
         params.delete(key);
       }
     });
-    
+
     // Khi thay đổi bộ lọc, quay về trang đầu tiên
     params.set("page", "1");
-    
+
     // Cập nhật URL
     replace(`${pathname}?${params}`);
   };
 
   const fetchCampaigns = async (
-    page, 
-    size, 
-    search = "", 
-    status = "", 
-    sortByParam = "", 
+    page,
+    size,
+    search = "",
+    status = "",
+    sortByParam = "",
     sortDirectionParam = "desc",
     startDateParam,
     endDateParam
   ) => {
     try {
       setLoading(true);
-      const response = await campaignService.getCampaigns({ 
-        page, 
-        size, 
-        search, 
+      const response = await campaignService.getCampaigns({
+        page,
+        size,
+        search,
         status,
         startDate: startDateParam || startDateFilter || undefined,
         endDate: endDateParam || endDateFilter || undefined,
         sortBy: sortByParam || 'createdAt',
         sortDirection: sortDirectionParam || 'desc'
       });
-      
+
       console.log("API Response (Campaigns):", response);
-      
+
       // Kiểm tra lỗi từ response
       if (response && (response.code >= 400 || response.error || response.status >= 400)) {
         const errorMessage = getErrorMessage(response, "Không thể tải danh sách chiến dịch");
@@ -200,21 +203,21 @@ const Page = () => {
         setCampaigns([]);
         return;
       }
-      
+
       // Kiểm tra và xử lý dữ liệu từ API
       if (response.items && Array.isArray(response.items)) {
         let processedItems = response.items;
-        
+
         // Nếu sort theo conversionRate, cần sort ở frontend vì đây là giá trị tính toán
         if (sortByParam === 'conversionRate') {
           processedItems = [...response.items].sort((a, b) => {
-            const rateA = (a.potentialStudentsCount > 0) 
-              ? (a.newStudentsCount || 0) / a.potentialStudentsCount 
+            const rateA = (a.potentialStudentsCount > 0)
+              ? (a.newStudentsCount || 0) / a.potentialStudentsCount
               : 0;
-            const rateB = (b.potentialStudentsCount > 0) 
-              ? (b.newStudentsCount || 0) / b.potentialStudentsCount 
+            const rateB = (b.potentialStudentsCount > 0)
+              ? (b.newStudentsCount || 0) / b.potentialStudentsCount
               : 0;
-            
+
             if (sortDirectionParam === 'desc') {
               return rateB - rateA;
             } else {
@@ -222,9 +225,9 @@ const Page = () => {
             }
           });
         }
-        
+
         setCampaigns(processedItems);
-        
+
         // Lưu metadata để sử dụng cho phân trang
         if (response.page !== undefined) {
           setMetadata({
@@ -276,7 +279,7 @@ const Page = () => {
   };
 
   const handleDateFilterChange = () => {
-    updateFilters({ 
+    updateFilters({
       startDate: startDate || undefined,
       endDate: endDate || undefined
     });
@@ -288,7 +291,7 @@ const Page = () => {
       // Nếu đang sắp xếp theo cột này, đảo chiều
       newSortDirection = sortDirection === 'desc' ? 'asc' : 'desc';
     }
-    updateFilters({ 
+    updateFilters({
       sortBy: column,
       sortDirection: newSortDirection
     });
@@ -308,16 +311,16 @@ const Page = () => {
       status: campaign.status || 'running',
       channelId: campaign.channelId || null,
       ownerStaffId: campaign.ownerStaffId || null,
-      budget: campaign.budget || 0,
-      spend: campaign.spend || 0,
-      roi: campaign.roi || 0
+      budget: campaign.budget ? String(campaign.budget) : '0',
+      spend: campaign.spend ? String(campaign.spend) : '0',
+      roi: campaign.roi ? String(campaign.roi) : '0'
     });
     setShowEditModal(true);
   };
 
   const handleEditSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Validation
     if (!editForm.name.trim()) {
       toast.error("Tên chiến dịch không được để trống!", {
@@ -326,10 +329,10 @@ const Page = () => {
       });
       return;
     }
-    
+
     try {
       toast.loading("Đang cập nhật chiến dịch...", { id: "edit-campaign" });
-      
+
       const response = await campaignService.updateCampaign(selectedCampaign.id, {
         name: editForm.name,
         status: editForm.status,
@@ -339,7 +342,7 @@ const Page = () => {
         spend: editForm.spend ? Number(editForm.spend) : 0,
         roi: editForm.roi ? Number(editForm.roi) : 0
       });
-      
+
       // Kiểm tra lỗi từ response
       if (response && (response.code >= 400 || response.error || response.status >= 400)) {
         const errorMessage = getErrorMessage(response, "Không thể cập nhật chiến dịch");
@@ -350,13 +353,13 @@ const Page = () => {
         });
         return;
       }
-      
+
       toast.success(`Đã cập nhật chiến dịch "${editForm.name}" thành công!`, {
         id: "edit-campaign",
         duration: 3000,
         position: "top-center"
       });
-      
+
       setShowEditModal(false);
       fetchCampaigns(currentPage, itemsPerPage, searchFilter, statusFilter, sortByFilter, sortDirectionFilter, startDateFilter, endDateFilter);
     } catch (err) {
@@ -378,9 +381,9 @@ const Page = () => {
   const handleDeleteConfirm = async () => {
     try {
       toast.loading("Đang xóa chiến dịch...", { id: "delete-campaign" });
-      
+
       const response = await campaignService.deleteCampaign(selectedCampaign.id);
-      
+
       // Kiểm tra lỗi từ response
       if (response && (response.code >= 400 || response.error || response.status >= 400)) {
         const errorMessage = getErrorMessage(response, "Không thể xóa chiến dịch");
@@ -391,13 +394,13 @@ const Page = () => {
         });
         return;
       }
-      
+
       toast.success(`Đã xóa chiến dịch "${selectedCampaign.name}" thành công!`, {
         id: "delete-campaign",
         duration: 3000,
         position: "top-center"
       });
-      
+
       setShowDeleteModal(false);
       fetchCampaigns(currentPage, itemsPerPage, searchFilter, statusFilter, sortByFilter, sortDirectionFilter, startDateFilter, endDateFilter);
     } catch (err) {
@@ -414,7 +417,7 @@ const Page = () => {
   const handleView = async (campaign) => {
     try {
       const campaignDetail = await campaignService.getCampaignDetails(campaign.id);
-      
+
       // Kiểm tra lỗi từ response
       if (campaignDetail && (campaignDetail.code >= 400 || campaignDetail.error || campaignDetail.status >= 400)) {
         const errorMessage = getErrorMessage(campaignDetail, "Không thể tải chi tiết chiến dịch");
@@ -424,7 +427,7 @@ const Page = () => {
         });
         return;
       }
-      
+
       setSelectedCampaign(campaignDetail);
       setShowViewModal(true);
     } catch (err) {
@@ -438,7 +441,7 @@ const Page = () => {
   };
 
   const getStatusColor = (status) => {
-    switch(status) {
+    switch (status) {
       case 'running': return Style.active;
       case 'paused': return Style.warning;
       case 'completed': return Style.completed;
@@ -447,11 +450,72 @@ const Page = () => {
   };
 
   const getStatusText = (status) => {
-    switch(status) {
+    switch (status) {
       case 'running': return 'Đang chạy';
       case 'paused': return 'Tạm dừng';
       case 'completed': return 'Hoàn thành';
       default: return status || 'N/A';
+    }
+  };
+
+  const handleExportExcel = async () => {
+    try {
+      setExporting(true);
+      toast.loading("Đang xuất báo cáo...", { id: "export-excel" });
+
+      // Fetch all data matching current filters
+      const response = await campaignService.getCampaigns({
+        page: 1,
+        size: 10000, // Large enough to get all
+        search: searchFilter,
+        status: statusFilter,
+        startDate: startDateFilter || undefined,
+        endDate: endDateFilter || undefined,
+        sortBy: sortByFilter || 'createdAt',
+        sortDirection: sortDirectionFilter || 'desc'
+      });
+
+      if (!response || !response.items || response.items.length === 0) {
+        toast.error("Không có dữ liệu để xuất", { id: "export-excel" });
+        return;
+      }
+
+      // Format data for Excel
+      const dataToExport = response.items.map(item => ({
+        'Tên chiến dịch': item.name,
+        'Trạng thái': getStatusText(item.status),
+        'Kênh': item.channelName || '',
+        'Người phụ trách': item.ownerStaffName || '',
+        'Ngân sách': item.budget || 0,
+        'Đã chi': item.cost || 0,
+        'Doanh thu': item.revenue || 0,
+        'Học viên tiềm năng': item.potentialStudentsCount || 0,
+        'Học viên mới': item.newStudentsCount || 0,
+        'Tỉ lệ chuyển đổi (%)': item.potentialStudentsCount > 0
+          ? ((item.newStudentsCount / item.potentialStudentsCount) * 100).toFixed(2)
+          : 0,
+        'ROI (%)': item.roi ? Number(item.roi).toFixed(2) : 0,
+        'Ngày tạo': item.createdAt ? new Date(item.createdAt).toLocaleDateString('vi-VN') : ''
+      }));
+
+      // Create workbook and worksheet
+      const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Chiến dịch");
+
+      // Generate file name with current date
+      const dateStr = new Date().toISOString().split('T')[0];
+      const fileName = `Bao_cao_chien_dich_${dateStr}.xlsx`;
+
+      // Write file
+      XLSX.writeFile(workbook, fileName);
+
+      toast.success("Xuất báo cáo thành công!", { id: "export-excel" });
+    } catch (err) {
+      console.error("Error exporting excel:", err);
+      toast.error("Có lỗi khi xuất báo cáo", { id: "export-excel" });
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -460,9 +524,9 @@ const Page = () => {
   // Format currency
   const formatCurrency = (value) => {
     if (!value) return '0 ₫';
-    return new Intl.NumberFormat('vi-VN', { 
-      style: 'currency', 
-      currency: 'VND' 
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND'
     }).format(value);
   };
 
@@ -512,10 +576,10 @@ const Page = () => {
 
       <div className={Style.top}>
         <Suspense fallback={<div>Loading...</div>}>
-          <FilterableSearch 
+          <FilterableSearch
             placeholder="Tìm kiếm theo tên chiến dịch..."
-            onChange={handleSearch} 
-            onSearch={handleSearch} 
+            onChange={handleSearch}
+            onSearch={handleSearch}
             value={searchTerm}
             statusFilter={selectedStatus}
             onStatusChange={handleStatusChange}
@@ -527,9 +591,18 @@ const Page = () => {
             ]}
           />
         </Suspense>
-        <Link href="/chiendich/add">
-          <button className={Style.addButton}>Thêm chiến dịch</button>
-        </Link>
+        <div className={Style.buttons}>
+          <button
+            className={Style.exportButton}
+            onClick={handleExportExcel}
+            disabled={exporting}
+          >
+            {exporting ? 'Đang xuất...' : 'Xuất Excel'}
+          </button>
+          <Link href="/chiendich/add">
+            <button className={Style.addButton}>Thêm chiến dịch</button>
+          </Link>
+        </div>
       </div>
 
       {/* Time Filter */}
@@ -552,14 +625,14 @@ const Page = () => {
             className={Style.dateInput}
           />
         </div>
-        <button 
+        <button
           className={Style.filterButton}
           onClick={handleDateFilterChange}
         >
           Áp dụng
         </button>
         {(startDate || endDate) && (
-          <button 
+          <button
             className={Style.clearFilterButton}
             onClick={() => {
               setStartDate("");
@@ -571,11 +644,11 @@ const Page = () => {
           </button>
         )}
       </div>
-    
+
       {/* Hiển thị kết quả tìm kiếm */}
       {searchFilter && (
         <div className={Style.searchInfo}>
-          Kết quả tìm kiếm cho: <strong>{searchFilter}</strong> | 
+          Kết quả tìm kiếm cho: <strong>{searchFilter}</strong> |
           Tìm thấy: <strong>{campaigns.length}</strong> chiến dịch
           {statusFilter && (
             <span> | Trạng thái: <strong>{getStatusText(statusFilter)}</strong></span>
@@ -591,7 +664,7 @@ const Page = () => {
             <td>
               <div className={Style.sortableHeader}>
                 Đã chi
-                <button 
+                <button
                   className={`${Style.sortButton} ${sortBy === 'cost' ? Style.active : ''}`}
                   onClick={() => handleSort('cost')}
                   title="Sắp xếp theo chi phí"
@@ -603,7 +676,7 @@ const Page = () => {
             <td>
               <div className={Style.sortableHeader}>
                 Doanh thu
-                <button 
+                <button
                   className={`${Style.sortButton} ${sortBy === 'revenue' ? Style.active : ''}`}
                   onClick={() => handleSort('revenue')}
                   title="Sắp xếp theo doanh thu"
@@ -615,7 +688,7 @@ const Page = () => {
             <td>
               <div className={Style.sortableHeader}>
                 HV mới
-                <button 
+                <button
                   className={`${Style.sortButton} ${sortBy === 'newStudentsCount' ? Style.active : ''}`}
                   onClick={() => handleSort('newStudentsCount')}
                   title="Sắp xếp theo số học viên mới"
@@ -627,7 +700,7 @@ const Page = () => {
             <td>
               <div className={Style.sortableHeader}>
                 HV tiềm năng
-                <button 
+                <button
                   className={`${Style.sortButton} ${sortBy === 'potentialStudentsCount' ? Style.active : ''}`}
                   onClick={() => handleSort('potentialStudentsCount')}
                   title="Sắp xếp theo số học viên tiềm năng"
@@ -639,7 +712,7 @@ const Page = () => {
             <td>
               <div className={Style.sortableHeader}>
                 Tỉ lệ chuyển đổi (HVTN/HVM)
-                <button 
+                <button
                   className={`${Style.sortButton} ${sortBy === 'conversionRate' ? Style.active : ''}`}
                   onClick={() => handleSort('conversionRate')}
                   title="Sắp xếp theo tỉ lệ chuyển đổi"
@@ -684,19 +757,19 @@ const Page = () => {
               </td>
               <td>
                 <div className={Style.buttons}>
-                  <button 
+                  <button
                     className={`${Style.button} ${Style.view}`}
                     onClick={() => handleView(campaign)}
                   >
                     Xem
                   </button>
-                  <button 
+                  <button
                     className={`${Style.button} ${Style.edit}`}
                     onClick={() => handleEdit(campaign)}
                   >
                     Sửa
                   </button>
-                  <button 
+                  <button
                     className={`${Style.button} ${Style.delete}`}
                     onClick={() => handleDelete(campaign)}
                   >
@@ -708,7 +781,7 @@ const Page = () => {
           ))}
         </tbody>
       </table>
-    
+
       <div className={Style.darkBg}>
         <Suspense fallback={<div>Loading...</div>}>
           <Pagination metadata={metadata || { page: 0, totalPages: 1, count: campaigns.length, totalElements: campaigns.length }} />
@@ -726,7 +799,7 @@ const Page = () => {
                 <input
                   type="text"
                   value={editForm.name}
-                  onChange={(e) => setEditForm({...editForm, name: e.target.value})}
+                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
                   required
                 />
               </div>
@@ -734,7 +807,7 @@ const Page = () => {
                 <label>Trạng thái:</label>
                 <select
                   value={editForm.status}
-                  onChange={(e) => setEditForm({...editForm, status: e.target.value})}
+                  onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
                   required
                 >
                   <option value="running">Đang chạy</option>
@@ -746,7 +819,7 @@ const Page = () => {
                 <label>Kênh:</label>
                 <select
                   value={editForm.channelId || ''}
-                  onChange={(e) => setEditForm({...editForm, channelId: e.target.value ? Number(e.target.value) : null})}
+                  onChange={(e) => setEditForm({ ...editForm, channelId: e.target.value ? Number(e.target.value) : null })}
                 >
                   <option value="">Chọn kênh</option>
                   {channels.map(channel => (
@@ -758,7 +831,7 @@ const Page = () => {
                 <label>Người phụ trách:</label>
                 <select
                   value={editForm.ownerStaffId || ''}
-                  onChange={(e) => setEditForm({...editForm, ownerStaffId: e.target.value ? Number(e.target.value) : null})}
+                  onChange={(e) => setEditForm({ ...editForm, ownerStaffId: e.target.value ? Number(e.target.value) : null })}
                 >
                   <option value="">Chọn nhân viên</option>
                   {staff.map(s => (
@@ -771,7 +844,7 @@ const Page = () => {
                 <input
                   type="number"
                   value={editForm.budget}
-                  onChange={(e) => setEditForm({...editForm, budget: e.target.value})}
+                  onChange={(e) => setEditForm({ ...editForm, budget: e.target.value })}
                   min="0"
                 />
               </div>
@@ -780,7 +853,7 @@ const Page = () => {
                 <input
                   type="number"
                   value={editForm.spend}
-                  onChange={(e) => setEditForm({...editForm, spend: e.target.value})}
+                  onChange={(e) => setEditForm({ ...editForm, spend: e.target.value })}
                   min="0"
                 />
               </div>
@@ -790,14 +863,14 @@ const Page = () => {
                   type="number"
                   step="0.01"
                   value={editForm.roi}
-                  onChange={(e) => setEditForm({...editForm, roi: e.target.value})}
+                  onChange={(e) => setEditForm({ ...editForm, roi: e.target.value })}
                   min="0"
                 />
               </div>
               <div className={Style.modalButtons}>
                 <button type="submit" className={Style.saveButton}>Lưu thay đổi</button>
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className={Style.cancelButton}
                   onClick={() => setShowEditModal(false)}
                 >
@@ -816,13 +889,13 @@ const Page = () => {
             <h2>Xóa chiến dịch</h2>
             <p>Bạn có chắc chắn muốn xóa chiến dịch "{selectedCampaign?.name}"?</p>
             <div className={Style.modalButtons}>
-              <button 
+              <button
                 className={Style.deleteButton}
                 onClick={handleDeleteConfirm}
               >
                 Xóa
               </button>
-              <button 
+              <button
                 className={Style.cancelButton}
                 onClick={() => setShowDeleteModal(false)}
               >
@@ -882,35 +955,35 @@ const Page = () => {
               <div className={Style.detailItem}>
                 <label>Doanh thu:</label>
                 <span>
-                  {selectedCampaign?.revenue ? new Intl.NumberFormat('vi-VN', { 
-                    style: 'currency', 
-                    currency: 'VND' 
+                  {selectedCampaign?.revenue ? new Intl.NumberFormat('vi-VN', {
+                    style: 'currency',
+                    currency: 'VND'
                   }).format(selectedCampaign.revenue) : '0 VNĐ'}
                 </span>
               </div>
               <div className={Style.detailItem}>
                 <label>Chi phí:</label>
                 <span>
-                  {selectedCampaign?.cost ? new Intl.NumberFormat('vi-VN', { 
-                    style: 'currency', 
-                    currency: 'VND' 
+                  {selectedCampaign?.cost ? new Intl.NumberFormat('vi-VN', {
+                    style: 'currency',
+                    currency: 'VND'
                   }).format(selectedCampaign.cost) : '0 VNĐ'}
                 </span>
               </div>
               <div className={Style.detailItem}>
                 <label>ROI:</label>
                 <span>
-                  {selectedCampaign?.roi != null 
-                    ? `${Number(selectedCampaign.roi).toFixed(2)}%` 
+                  {selectedCampaign?.roi != null
+                    ? `${Number(selectedCampaign.roi).toFixed(2)}%`
                     : 'N/A'}
                 </span>
               </div>
               <div className={Style.detailItem}>
                 <label>Ngân sách:</label>
                 <span>
-                  {selectedCampaign?.budget ? new Intl.NumberFormat('vi-VN', { 
-                    style: 'currency', 
-                    currency: 'VND' 
+                  {selectedCampaign?.budget ? new Intl.NumberFormat('vi-VN', {
+                    style: 'currency',
+                    currency: 'VND'
                   }).format(selectedCampaign.budget) : '0 VNĐ'}
                 </span>
               </div>
@@ -920,7 +993,7 @@ const Page = () => {
                   <span>{new Date(selectedCampaign.createdAt).toLocaleDateString('vi-VN')}</span>
                 </div>
               )}
-              
+
               {/* Hiển thị thông tin kênh truyền thông */}
               {selectedCampaign?.channels && selectedCampaign.channels.length > 0 && (
                 <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid var(--border)' }}>
@@ -940,9 +1013,9 @@ const Page = () => {
                         <tr key={index} style={{ borderBottom: '1px solid var(--border)' }}>
                           <td style={{ padding: '10px' }}>{channel.channelName || 'N/A'}</td>
                           <td style={{ padding: '10px', textAlign: 'right' }}>
-                            {new Intl.NumberFormat('vi-VN', { 
-                              style: 'currency', 
-                              currency: 'VND' 
+                            {new Intl.NumberFormat('vi-VN', {
+                              style: 'currency',
+                              currency: 'VND'
                             }).format(channel.cost || 0)}
                           </td>
                           <td style={{ padding: '10px', textAlign: 'center' }}>
@@ -952,9 +1025,9 @@ const Page = () => {
                             {channel.newStudentsCount || 0}
                           </td>
                           <td style={{ padding: '10px', textAlign: 'right' }}>
-                            {new Intl.NumberFormat('vi-VN', { 
-                              style: 'currency', 
-                              currency: 'VND' 
+                            {new Intl.NumberFormat('vi-VN', {
+                              style: 'currency',
+                              currency: 'VND'
                             }).format(channel.revenue || 0)}
                           </td>
                         </tr>
@@ -965,7 +1038,7 @@ const Page = () => {
               )}
             </div>
             <div className={Style.modalButtons}>
-              <button 
+              <button
                 className={Style.cancelButton}
                 onClick={() => setShowViewModal(false)}
               >

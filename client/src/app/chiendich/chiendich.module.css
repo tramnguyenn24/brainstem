@@ -28,6 +28,27 @@
   background-color: #4a45a8;
 }
 
+.exportButton {
+  padding: 10px 20px;
+  background-color: #217346;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+}
+
+.exportButton:hover {
+  background-color: #1a5c38;
+}
+
+.exportButton:disabled {
+  background-color: #8391a2;
+  cursor: not-allowed;
+}
+
 .table {
   width: 100%;
   border-collapse: collapse;
@@ -456,4 +477,3 @@
   color: #5d57c9;
   background-color: rgba(93, 87, 201, 0.1);
 }
-
