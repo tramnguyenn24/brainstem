@@ -63,11 +63,15 @@ const FormEmbedPage = () => {
   const handleBlur = async (fieldId, value, type) => {
     if (type === 'tel' && value && /^[0-9]{10,11}$/.test(value.replace(/\s/g, ''))) {
       try {
-        const result = await formService.checkPhone(value);
+        // Get campaignId from form to check duplicates only within same campaign
+        const campaignId = form?.campaignId || form?.settings?.campaignId || null;
+        const result = await formService.checkPhone(value, campaignId);
         if (result.exists) {
           setErrors(prev => ({
             ...prev,
-            [fieldId]: 'Số điện thoại đã tồn tại trong hệ thống'
+            [fieldId]: campaignId
+              ? 'Số điện thoại đã tồn tại trong chiến dịch này'
+              : 'Số điện thoại đã tồn tại trong hệ thống'
           }));
         }
       } catch (err) {

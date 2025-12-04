@@ -121,9 +121,13 @@ export const formService = {
     }
   },
 
-  checkPhone: async phone => {
+  checkPhone: async (phone, campaignId = null) => {
     try {
-      const { data } = await apiRequest(`${API_BASE_URL}/api/leads/check-phone?phone=${phone}`, {
+      let url = `${API_BASE_URL}/api/leads/check-phone?phone=${phone}`;
+      if (campaignId) {
+        url += `&campaignId=${campaignId}`;
+      }
+      const { data } = await apiRequest(url, {
         method: 'GET'
       });
       return data;

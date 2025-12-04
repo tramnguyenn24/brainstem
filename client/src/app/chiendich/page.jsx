@@ -576,10 +576,6 @@ const Page = () => {
             <div className={Style.summaryCardLabel}>Doanh thu</div>
             <div className={Style.summaryCardValue}>{formatCurrency(summary.totalRevenue || 0)}</div>
           </div>
-          <div className={Style.summaryCard}>
-            <div className={Style.summaryCardLabel}>Học viên mới</div>
-            <div className={Style.summaryCardValue}>{formatNumber(summary.totalNewStudents || 0)}</div>
-          </div>
         </div>
       )}
 

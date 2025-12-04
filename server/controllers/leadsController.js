@@ -253,11 +253,20 @@ exports.convertLead = async (req, res) => {
 };
 
 exports.checkPhone = async (req, res) => {
-  const { phone } = req.query;
+  const { phone, campaignId } = req.query;
   if (!phone) return res.status(400).json({ message: 'Phone number is required' });
 
   const repo = AppDataSource.getRepository('Lead');
-  const lead = await repo.findOne({ where: { phone: phone } });
+
+  // Build query conditions
+  const whereCondition = { phone: phone };
+
+  // Only check within the same campaign if campaignId is provided
+  if (campaignId) {
+    whereCondition.campaignId = Number(campaignId);
+  }
+
+  const lead = await repo.findOne({ where: whereCondition });
 
   res.json({ exists: !!lead });
 };
