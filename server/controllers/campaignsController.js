@@ -140,6 +140,16 @@ async function toEnrichedCampaign(c) {
   // Get campaign channels details
   const channels = await getCampaignChannels(c.id);
 
+  // Kiểm tra và tự động cập nhật trạng thái nếu chiến dịch hết hạn
+  if (c.endDate && c.status === 'running') {
+    const now = new Date();
+    if (now > new Date(c.endDate)) {
+      const repo = AppDataSource.getRepository('Campaign');
+      await repo.update(c.id, { status: 'completed', updatedAt: new Date() });
+      c.status = 'completed';
+    }
+  }
+
   return {
     ...c,
     channelName: channel ? channel.name : null,
@@ -149,6 +159,20 @@ async function toEnrichedCampaign(c) {
     potentialStudentsCount: c.potentialStudentsCount || metrics.potentialStudentsCount || 0,
     newStudentsCount: c.newStudentsCount || metrics.newStudentsCount || 0,
     roi: c.roi || roi,
+    // Mục tiêu chiến dịch
+    targetLeads: c.targetLeads || 0,
+    targetNewStudents: c.targetNewStudents || 0,
+    targetRevenue: Number(c.targetRevenue) || 0,
+    // Tính % hoàn thành mục tiêu
+    leadsProgress: c.targetLeads > 0 
+      ? Math.min(100, ((c.potentialStudentsCount || metrics.potentialStudentsCount || 0) / c.targetLeads) * 100).toFixed(1)
+      : null,
+    newStudentsProgress: c.targetNewStudents > 0 
+      ? Math.min(100, ((c.newStudentsCount || metrics.newStudentsCount || 0) / c.targetNewStudents) * 100).toFixed(1)
+      : null,
+    revenueProgress: c.targetRevenue > 0 
+      ? Math.min(100, (Number(c.revenue || metrics.revenue || 0) / Number(c.targetRevenue)) * 100).toFixed(1)
+      : null,
     channels: channels // Include all campaign channels
   };
 }
@@ -528,9 +552,24 @@ exports.create = async (req, res) => {
     totalCost = Number(body.cost);
   }
 
+  // Xử lý ngày bắt đầu và kết thúc
+  const startDate = body.startDate ? new Date(body.startDate) : null;
+  const endDate = body.endDate ? new Date(body.endDate) : null;
+
+  // Tự động xác định trạng thái dựa trên ngày
+  let status = body.status || 'running';
+  if (startDate && endDate) {
+    const now = new Date();
+    if (now < startDate) {
+      status = 'paused'; // Chưa đến ngày bắt đầu
+    } else if (now > endDate) {
+      status = 'completed'; // Đã hết hạn
+    }
+  }
+
   const item = {
     name: body.name || '',
-    status: body.status || 'running',
+    status: status,
     channelId: Number(body.channelId) || null, // Giữ lại để backward compatibility
     ownerStaffId: Number(body.ownerStaffId) || null,
     budget: Number(body.budget) || null,
@@ -539,6 +578,12 @@ exports.create = async (req, res) => {
     revenue: Number(body.revenue) || null,
     potentialStudentsCount: Number(body.potentialStudentsCount) || 0,
     newStudentsCount: Number(body.newStudentsCount) || 0,
+    startDate: startDate,
+    endDate: endDate,
+    // Mục tiêu chiến dịch
+    targetLeads: Number(body.targetLeads) || 0,
+    targetNewStudents: Number(body.targetNewStudents) || 0,
+    targetRevenue: Number(body.targetRevenue) || 0,
     createdAt: new Date(),
     updatedAt: new Date()
   };
@@ -597,6 +642,23 @@ exports.update = async (req, res) => {
     body.cost = campaignChannels.reduce((sum, cc) => sum + (Number(cc.cost) || 0), 0);
   }
 
+  // Xử lý ngày bắt đầu và kết thúc
+  const startDate = body.startDate !== undefined
+    ? (body.startDate ? new Date(body.startDate) : null)
+    : existing.startDate;
+  const endDate = body.endDate !== undefined
+    ? (body.endDate ? new Date(body.endDate) : null)
+    : existing.endDate;
+
+  // Tự động cập nhật trạng thái dựa trên ngày kết thúc
+  let status = body.status != null ? body.status : existing.status;
+  if (endDate) {
+    const now = new Date();
+    if (now > endDate && status === 'running') {
+      status = 'completed'; // Tự động đóng chiến dịch khi hết hạn
+    }
+  }
+
   // Tính ROI tự động nếu có revenue và cost
   let roi = existing.roi;
   if (body.revenue != null || body.cost != null) {
@@ -608,7 +670,7 @@ exports.update = async (req, res) => {
   const updated = {
     ...existing,
     name: body.name != null ? body.name : existing.name,
-    status: body.status != null ? body.status : existing.status,
+    status: status,
     channelId: body.channelId != null ? Number(body.channelId) : existing.channelId,
     ownerStaffId: body.ownerStaffId != null ? Number(body.ownerStaffId) : existing.ownerStaffId,
     budget: body.budget != null ? Number(body.budget) : existing.budget,
@@ -617,6 +679,12 @@ exports.update = async (req, res) => {
     revenue: body.revenue != null ? Number(body.revenue) : existing.revenue,
     potentialStudentsCount: body.potentialStudentsCount != null ? Number(body.potentialStudentsCount) : existing.potentialStudentsCount,
     newStudentsCount: body.newStudentsCount != null ? Number(body.newStudentsCount) : existing.newStudentsCount,
+    startDate: startDate,
+    endDate: endDate,
+    // Mục tiêu chiến dịch
+    targetLeads: body.targetLeads != null ? Number(body.targetLeads) : existing.targetLeads,
+    targetNewStudents: body.targetNewStudents != null ? Number(body.targetNewStudents) : existing.targetNewStudents,
+    targetRevenue: body.targetRevenue != null ? Number(body.targetRevenue) : existing.targetRevenue,
     roi: roi,
     updatedAt: new Date()
   };

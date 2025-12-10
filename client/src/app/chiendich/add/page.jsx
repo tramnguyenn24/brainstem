@@ -26,7 +26,13 @@ const AddCampaignPage = () => {
     budget: 0,
     spend: 0,
     cost: 0,
-    revenue: 0
+    revenue: 0,
+    startDate: '',
+    endDate: '',
+    // Mục tiêu chiến dịch
+    targetLeads: 0,
+    targetNewStudents: 0,
+    targetRevenue: 0
   });
 
   const [channels, setChannels] = useState([]);
@@ -190,6 +196,12 @@ const AddCampaignPage = () => {
         spend: formData.spend ? Number(formData.spend) : 0,
         cost: formData.cost || 0,
         revenue: formData.revenue ? Number(formData.revenue) : 0,
+        startDate: formData.startDate || null,
+        endDate: formData.endDate || null,
+        // Mục tiêu chiến dịch
+        targetLeads: formData.targetLeads ? Number(formData.targetLeads) : 0,
+        targetNewStudents: formData.targetNewStudents ? Number(formData.targetNewStudents) : 0,
+        targetRevenue: formData.targetRevenue ? Number(formData.targetRevenue) : 0,
         channels: channelsData
       });
       
@@ -255,6 +267,29 @@ const AddCampaignPage = () => {
             <option value="completed">Hoàn thành</option>
           </select>
         </div>
+
+        <div className={styles.formGroup}>
+          <label>Ngày bắt đầu:</label>
+          <input
+            type="date"
+            name="startDate"
+            value={formData.startDate}
+            onChange={handleChange}
+          />
+          <small style={{ color: '#666', fontSize: '12px' }}>Để trống nếu bắt đầu ngay</small>
+        </div>
+
+        <div className={styles.formGroup}>
+          <label>Ngày kết thúc:</label>
+          <input
+            type="date"
+            name="endDate"
+            value={formData.endDate}
+            onChange={handleChange}
+          />
+          <small style={{ color: '#666', fontSize: '12px' }}>Form của chiến dịch sẽ tự động đóng khi đến ngày này</small>
+        </div>
+
         <div className={styles.formGroup}>
           <label>Người phụ trách:</label>
           <select
@@ -326,6 +361,57 @@ const AddCampaignPage = () => {
           />
           {errors['revenue'] && <span className={styles.errorText}>{errors['revenue']}</span>}
           <small style={{ color: '#666', fontSize: '12px' }}>Doanh thu sẽ được tính tự động từ khóa học học viên đăng ký</small>
+        </div>
+
+        {/* Mục tiêu chiến dịch */}
+        <div style={{ 
+          marginTop: '20px', 
+          paddingTop: '20px', 
+          borderTop: '1px solid var(--border)',
+          marginBottom: '20px'
+        }}>
+          <h3 style={{ marginBottom: '15px', fontSize: '16px', fontWeight: 600, color: 'var(--text)' }}>
+            🎯 Mục tiêu chiến dịch
+          </h3>
+          
+          <div className={styles.formGroup}>
+            <label>Mục tiêu số Lead (HVTN):</label>
+            <input
+              type="number"
+              name="targetLeads"
+              value={formData.targetLeads}
+              onChange={handleChange}
+              placeholder="Nhập mục tiêu số lead"
+              min="0"
+            />
+            <small style={{ color: '#666', fontSize: '12px' }}>Số lượng học viên tiềm năng mong muốn đạt được</small>
+          </div>
+
+          <div className={styles.formGroup}>
+            <label>Mục tiêu số HV mới:</label>
+            <input
+              type="number"
+              name="targetNewStudents"
+              value={formData.targetNewStudents}
+              onChange={handleChange}
+              placeholder="Nhập mục tiêu số học viên mới"
+              min="0"
+            />
+            <small style={{ color: '#666', fontSize: '12px' }}>Số lượng học viên mới mong muốn chuyển đổi từ lead</small>
+          </div>
+
+          <div className={styles.formGroup}>
+            <label>Mục tiêu doanh thu (VNĐ):</label>
+            <input
+              type="number"
+              name="targetRevenue"
+              value={formData.targetRevenue}
+              onChange={handleChange}
+              placeholder="Nhập mục tiêu doanh thu"
+              min="0"
+            />
+            <small style={{ color: '#666', fontSize: '12px' }}>Doanh thu mong muốn đạt được từ chiến dịch</small>
+          </div>
         </div>
 
         {/* Phần thêm kênh truyền thông */}

@@ -35,7 +35,11 @@ const Page = () => {
     ownerStaffId: null,
     budget: '0',
     spend: '0',
-    roi: '0'
+    roi: '0',
+    // Mục tiêu chiến dịch
+    targetLeads: '0',
+    targetNewStudents: '0',
+    targetRevenue: '0'
   });
   const [showViewModal, setShowViewModal] = useState(false);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -321,7 +325,11 @@ const Page = () => {
       ownerStaffId: campaign.ownerStaffId || null,
       budget: campaign.budget ? String(campaign.budget) : '0',
       spend: campaign.spend ? String(campaign.spend) : '0',
-      roi: campaign.roi ? String(campaign.roi) : '0'
+      roi: campaign.roi ? String(campaign.roi) : '0',
+      // Mục tiêu chiến dịch
+      targetLeads: campaign.targetLeads ? String(campaign.targetLeads) : '0',
+      targetNewStudents: campaign.targetNewStudents ? String(campaign.targetNewStudents) : '0',
+      targetRevenue: campaign.targetRevenue ? String(campaign.targetRevenue) : '0'
     });
 
     // Load existing channels
@@ -381,6 +389,10 @@ const Page = () => {
         budget: editForm.budget ? Number(editForm.budget) : 0,
         spend: editForm.spend ? Number(editForm.spend) : 0,
         roi: editForm.roi ? Number(editForm.roi) : 0,
+        // Mục tiêu chiến dịch
+        targetLeads: editForm.targetLeads ? Number(editForm.targetLeads) : 0,
+        targetNewStudents: editForm.targetNewStudents ? Number(editForm.targetNewStudents) : 0,
+        targetRevenue: editForm.targetRevenue ? Number(editForm.targetRevenue) : 0,
         channels: channelsData
       });
 
@@ -787,6 +799,7 @@ const Page = () => {
               </div>
             </td>
             <td>ROI</td>
+            <td>% Hoàn thành mục tiêu</td>
             <td>Trạng thái</td>
             <td>Hành động</td>
           </tr>
@@ -815,6 +828,100 @@ const Page = () => {
                 )}
               </td>
               <td>{campaign.roi != null ? `${Number(campaign.roi).toFixed(2)}%` : 'N/A'}</td>
+              <td>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12px' }}>
+                  {campaign.targetLeads > 0 && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ minWidth: '50px', color: '#8391a2' }}>Lead:</span>
+                      <div style={{ 
+                        flex: 1, 
+                        height: '8px', 
+                        background: '#2d3748', 
+                        borderRadius: '4px', 
+                        overflow: 'hidden',
+                        minWidth: '60px'
+                      }}>
+                        <div style={{ 
+                          width: `${Math.min(100, campaign.leadsProgress || 0)}%`, 
+                          height: '100%', 
+                          background: campaign.leadsProgress >= 100 ? '#10b981' : '#3b82f6',
+                          borderRadius: '4px',
+                          transition: 'width 0.3s ease'
+                        }}></div>
+                      </div>
+                      <span style={{ 
+                        minWidth: '45px', 
+                        textAlign: 'right',
+                        color: campaign.leadsProgress >= 100 ? '#10b981' : '#fff',
+                        fontWeight: campaign.leadsProgress >= 100 ? 600 : 400
+                      }}>
+                        {campaign.leadsProgress || 0}%
+                      </span>
+                    </div>
+                  )}
+                  {campaign.targetNewStudents > 0 && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ minWidth: '50px', color: '#8391a2' }}>HV mới:</span>
+                      <div style={{ 
+                        flex: 1, 
+                        height: '8px', 
+                        background: '#2d3748', 
+                        borderRadius: '4px', 
+                        overflow: 'hidden',
+                        minWidth: '60px'
+                      }}>
+                        <div style={{ 
+                          width: `${Math.min(100, campaign.newStudentsProgress || 0)}%`, 
+                          height: '100%', 
+                          background: campaign.newStudentsProgress >= 100 ? '#10b981' : '#8b5cf6',
+                          borderRadius: '4px',
+                          transition: 'width 0.3s ease'
+                        }}></div>
+                      </div>
+                      <span style={{ 
+                        minWidth: '45px', 
+                        textAlign: 'right',
+                        color: campaign.newStudentsProgress >= 100 ? '#10b981' : '#fff',
+                        fontWeight: campaign.newStudentsProgress >= 100 ? 600 : 400
+                      }}>
+                        {campaign.newStudentsProgress || 0}%
+                      </span>
+                    </div>
+                  )}
+                  {campaign.targetRevenue > 0 && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ minWidth: '50px', color: '#8391a2' }}>DT:</span>
+                      <div style={{ 
+                        flex: 1, 
+                        height: '8px', 
+                        background: '#2d3748', 
+                        borderRadius: '4px', 
+                        overflow: 'hidden',
+                        minWidth: '60px'
+                      }}>
+                        <div style={{ 
+                          width: `${Math.min(100, campaign.revenueProgress || 0)}%`, 
+                          height: '100%', 
+                          background: campaign.revenueProgress >= 100 ? '#10b981' : '#f59e0b',
+                          borderRadius: '4px',
+                          transition: 'width 0.3s ease'
+                        }}></div>
+                      </div>
+                      <span style={{ 
+                        minWidth: '45px', 
+                        textAlign: 'right',
+                        color: campaign.revenueProgress >= 100 ? '#10b981' : '#fff',
+                        fontWeight: campaign.revenueProgress >= 100 ? 600 : 400
+                      }}>
+                        {campaign.revenueProgress || 0}%
+                      </span>
+                    </div>
+                  )}
+                  {!campaign.targetLeads && !campaign.targetNewStudents && !campaign.targetRevenue && (
+                    <span style={{ color: '#8391a2', fontStyle: 'italic' }}>Chưa đặt mục tiêu</span>
+                  )}
+                </div>
+              </td>
               <td>
                 <span className={`${Style.status} ${getStatusColor(campaign.status)}`}>
                   {getStatusText(campaign.status)}
@@ -919,6 +1026,48 @@ const Page = () => {
                   onChange={(e) => setEditForm({ ...editForm, roi: e.target.value })}
                   min="0"
                 />
+              </div>
+
+              {/* Mục tiêu chiến dịch */}
+              <div style={{ 
+                marginTop: '20px', 
+                paddingTop: '20px', 
+                borderTop: '1px solid var(--border)',
+                marginBottom: '20px'
+              }}>
+                <h3 style={{ marginBottom: '15px', fontSize: '16px', fontWeight: 600 }}>
+                  🎯 Mục tiêu chiến dịch
+                </h3>
+                
+                <div className={Style.formGroup}>
+                  <label>Mục tiêu số Lead (HVTN):</label>
+                  <input
+                    type="number"
+                    value={editForm.targetLeads}
+                    onChange={(e) => setEditForm({ ...editForm, targetLeads: e.target.value })}
+                    min="0"
+                  />
+                </div>
+
+                <div className={Style.formGroup}>
+                  <label>Mục tiêu số HV mới:</label>
+                  <input
+                    type="number"
+                    value={editForm.targetNewStudents}
+                    onChange={(e) => setEditForm({ ...editForm, targetNewStudents: e.target.value })}
+                    min="0"
+                  />
+                </div>
+
+                <div className={Style.formGroup}>
+                  <label>Mục tiêu doanh thu (VNĐ):</label>
+                  <input
+                    type="number"
+                    value={editForm.targetRevenue}
+                    onChange={(e) => setEditForm({ ...editForm, targetRevenue: e.target.value })}
+                    min="0"
+                  />
+                </div>
               </div>
 
               {/* Kênh truyền thông */}
@@ -1110,6 +1259,103 @@ const Page = () => {
                 <div className={Style.detailItem}>
                   <label>Ngày tạo:</label>
                   <span>{new Date(selectedCampaign.createdAt).toLocaleDateString('vi-VN')}</span>
+                </div>
+              )}
+
+              {/* Mục tiêu chiến dịch */}
+              {(selectedCampaign?.targetLeads > 0 || selectedCampaign?.targetNewStudents > 0 || selectedCampaign?.targetRevenue > 0) && (
+                <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid var(--border)' }}>
+                  <h3 style={{ marginBottom: '15px', fontSize: '18px', fontWeight: 600 }}>🎯 Mục tiêu chiến dịch:</h3>
+                  
+                  {selectedCampaign?.targetLeads > 0 && (
+                    <div className={Style.detailItem} style={{ marginBottom: '15px' }}>
+                      <label>Mục tiêu Lead (HVTN):</label>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
+                        <span>{formatNumber(selectedCampaign.potentialStudentsCount || 0)} / {formatNumber(selectedCampaign.targetLeads)}</span>
+                        <div style={{ 
+                          flex: 1, 
+                          height: '10px', 
+                          background: '#2d3748', 
+                          borderRadius: '5px', 
+                          overflow: 'hidden',
+                          maxWidth: '200px'
+                        }}>
+                          <div style={{ 
+                            width: `${Math.min(100, selectedCampaign.leadsProgress || 0)}%`, 
+                            height: '100%', 
+                            background: selectedCampaign.leadsProgress >= 100 ? '#10b981' : '#3b82f6',
+                            borderRadius: '5px'
+                          }}></div>
+                        </div>
+                        <span style={{ 
+                          fontWeight: 600,
+                          color: selectedCampaign.leadsProgress >= 100 ? '#10b981' : '#fff'
+                        }}>
+                          {selectedCampaign.leadsProgress || 0}%
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {selectedCampaign?.targetNewStudents > 0 && (
+                    <div className={Style.detailItem} style={{ marginBottom: '15px' }}>
+                      <label>Mục tiêu HV mới:</label>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
+                        <span>{formatNumber(selectedCampaign.newStudentsCount || 0)} / {formatNumber(selectedCampaign.targetNewStudents)}</span>
+                        <div style={{ 
+                          flex: 1, 
+                          height: '10px', 
+                          background: '#2d3748', 
+                          borderRadius: '5px', 
+                          overflow: 'hidden',
+                          maxWidth: '200px'
+                        }}>
+                          <div style={{ 
+                            width: `${Math.min(100, selectedCampaign.newStudentsProgress || 0)}%`, 
+                            height: '100%', 
+                            background: selectedCampaign.newStudentsProgress >= 100 ? '#10b981' : '#8b5cf6',
+                            borderRadius: '5px'
+                          }}></div>
+                        </div>
+                        <span style={{ 
+                          fontWeight: 600,
+                          color: selectedCampaign.newStudentsProgress >= 100 ? '#10b981' : '#fff'
+                        }}>
+                          {selectedCampaign.newStudentsProgress || 0}%
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {selectedCampaign?.targetRevenue > 0 && (
+                    <div className={Style.detailItem} style={{ marginBottom: '15px' }}>
+                      <label>Mục tiêu doanh thu:</label>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
+                        <span>{formatCurrency(selectedCampaign.revenue || 0)} / {formatCurrency(selectedCampaign.targetRevenue)}</span>
+                        <div style={{ 
+                          flex: 1, 
+                          height: '10px', 
+                          background: '#2d3748', 
+                          borderRadius: '5px', 
+                          overflow: 'hidden',
+                          maxWidth: '200px'
+                        }}>
+                          <div style={{ 
+                            width: `${Math.min(100, selectedCampaign.revenueProgress || 0)}%`, 
+                            height: '100%', 
+                            background: selectedCampaign.revenueProgress >= 100 ? '#10b981' : '#f59e0b',
+                            borderRadius: '5px'
+                          }}></div>
+                        </div>
+                        <span style={{ 
+                          fontWeight: 600,
+                          color: selectedCampaign.revenueProgress >= 100 ? '#10b981' : '#fff'
+                        }}>
+                          {selectedCampaign.revenueProgress || 0}%
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

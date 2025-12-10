@@ -30,7 +30,6 @@ const Dashboard = () => {
     // Chỉ chạy API khi:
     // - Cả startDate & endDate đều trống (load mặc định), hoặc
     // - Cả hai đều được chọn & hợp lệ
-
     // Trường hợp chỉ chọn 1 trong 2 ngày => không gọi API
     if ((startDate && !endDate) || (!startDate && endDate)) {
       return;
@@ -479,6 +478,7 @@ const Dashboard = () => {
                   )}
                 </div>
                 <StackedBarChartCard
+                  title="HV mới theo Chiến dịch và Tháng"
                   data={newStudentsByCampaignMonth.map(monthData => {
                     const dataPoint = { name: monthData.month };
                     // Thêm tất cả campaigns vào data (để legend hoạt động đúng)

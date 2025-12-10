@@ -45,7 +45,42 @@ exports.getById = async (req, res) => {
   const id = Number(req.params.id);
   const form = await AppDataSource.getRepository('Form').findOne({ where: { id } });
   if (!form) return res.status(404).json({ message: 'Form not found' });
-  res.json(form);
+  
+  // Kiểm tra chiến dịch còn hiệu lực không
+  const campaignId = form.campaignId || form.settings?.campaignId;
+  let campaignInfo = null;
+  
+  if (campaignId) {
+    const campaignRepo = AppDataSource.getRepository('Campaign');
+    const campaign = await campaignRepo.findOne({ where: { id: campaignId } });
+    if (campaign) {
+      campaignInfo = {
+        id: campaign.id,
+        name: campaign.name,
+        status: campaign.status,
+        startDate: campaign.startDate,
+        endDate: campaign.endDate
+      };
+      
+      // Kiểm tra và tự động đóng form nếu chiến dịch hết hạn
+      if (campaign.endDate) {
+        const now = new Date();
+        if (now > new Date(campaign.endDate) && form.status === 'active') {
+          const formRepo = AppDataSource.getRepository('Form');
+          await formRepo.update(form.id, { status: 'inactive', updatedAt: new Date() });
+          form.status = 'inactive';
+          
+          // Cập nhật trạng thái chiến dịch nếu cần
+          if (campaign.status === 'running') {
+            await campaignRepo.update(campaignId, { status: 'completed', updatedAt: new Date() });
+            campaignInfo.status = 'completed';
+          }
+        }
+      }
+    }
+  }
+  
+  res.json({ ...form, campaign: campaignInfo });
 };
 
 exports.getEmbed = async (req, res) => {
@@ -279,6 +314,46 @@ exports.submitForm = async (req, res) => {
     if (!campaign) {
       console.warn(`Form submission references non-existent campaignId: ${campaignId}`);
       campaignId = null;
+    } else {
+      // Kiểm tra chiến dịch còn hiệu lực không (dựa trên endDate)
+      if (campaign.endDate) {
+        const now = new Date();
+        const endDate = new Date(campaign.endDate);
+        if (now > endDate) {
+          // Tự động cập nhật trạng thái chiến dịch thành completed
+          if (campaign.status === 'running') {
+            await campaignRepo.update(campaignId, { status: 'completed', updatedAt: new Date() });
+          }
+          // Tự động đóng form khi chiến dịch hết hạn
+          await formRepo.update(form.id, { status: 'inactive', updatedAt: new Date() });
+          return res.status(400).json({ 
+            message: 'Chiến dịch đã kết thúc. Form không còn nhận đăng ký.',
+            campaignEnded: true,
+            endDate: campaign.endDate
+          });
+        }
+      }
+      
+      // Kiểm tra chiến dịch chưa bắt đầu
+      if (campaign.startDate) {
+        const now = new Date();
+        const startDate = new Date(campaign.startDate);
+        if (now < startDate) {
+          return res.status(400).json({ 
+            message: 'Chiến dịch chưa bắt đầu. Vui lòng quay lại sau.',
+            campaignNotStarted: true,
+            startDate: campaign.startDate
+          });
+        }
+      }
+      
+      // Kiểm tra trạng thái chiến dịch
+      if (campaign.status !== 'running') {
+        return res.status(400).json({ 
+          message: 'Chiến dịch không hoạt động. Form tạm thời không nhận đăng ký.',
+          campaignStatus: campaign.status
+        });
+      }
     }
   }
 

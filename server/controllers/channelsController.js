@@ -88,7 +88,20 @@ exports.getCampaigns = async (req, res) => {
 
   const campaignRepo = AppDataSource.getRepository('Campaign');
   const staffRepo = AppDataSource.getRepository('Staff');
-  let list = await campaignRepo.find({ where: { channelId: id } });
+  const campaignChannelRepo = AppDataSource.getRepository('CampaignChannel');
+
+  // Get campaign IDs through the CampaignChannel join table
+  const campaignChannels = await campaignChannelRepo.find({ where: { channelId: id } });
+  const campaignIds = campaignChannels.map(cc => cc.campaignId);
+
+  // Fetch the actual campaigns
+  let list = [];
+  if (campaignIds.length > 0) {
+    list = await campaignRepo.createQueryBuilder('campaign')
+      .where('campaign.id IN (:...ids)', { ids: campaignIds })
+      .getMany();
+  }
+
   list = sortItems(list, sortBy, sortDirection);
   const totalItems = list.length;
   const start = (pageNum - 1) * pageSize;
@@ -106,11 +119,11 @@ exports.getCampaigns = async (req, res) => {
 exports.create = async (req, res) => {
   const body = req.body || {};
   const repo = AppDataSource.getRepository('Channel');
-  
+
   if (!body.name || !body.name.trim()) {
     return res.status(400).json({ message: 'Tên kênh là bắt buộc' });
   }
-  
+
   const item = {
     name: body.name.trim(),
     type: body.type || null,
@@ -118,7 +131,7 @@ exports.create = async (req, res) => {
     createdAt: new Date(),
     updatedAt: new Date()
   };
-  
+
   try {
     const saved = await repo.save(item);
     res.status(201).json(saved);
@@ -132,23 +145,23 @@ exports.update = async (req, res) => {
   const id = Number(req.params.id);
   const body = req.body || {};
   const repo = AppDataSource.getRepository('Channel');
-  
+
   const channel = await repo.findOne({ where: { id } });
   if (!channel) {
     return res.status(404).json({ message: 'Channel not found' });
   }
-  
+
   if (body.name !== undefined) {
     if (!body.name || !body.name.trim()) {
       return res.status(400).json({ message: 'Tên kênh không được để trống' });
     }
     channel.name = body.name.trim();
   }
-  
+
   if (body.type !== undefined) channel.type = body.type || null;
   if (body.status !== undefined) channel.status = body.status || 'active';
   channel.updatedAt = new Date();
-  
+
   try {
     const updated = await repo.save(channel);
     res.json(updated);
@@ -161,22 +174,22 @@ exports.update = async (req, res) => {
 exports.delete = async (req, res) => {
   const id = Number(req.params.id);
   const repo = AppDataSource.getRepository('Channel');
-  
+
   const channel = await repo.findOne({ where: { id } });
   if (!channel) {
     return res.status(404).json({ message: 'Channel not found' });
   }
-  
+
   // Kiểm tra xem channel có đang được sử dụng trong campaigns không
   const campaignChannelRepo = AppDataSource.getRepository('CampaignChannel');
   const campaignChannels = await campaignChannelRepo.find({ where: { channelId: id } });
-  
+
   if (campaignChannels.length > 0) {
-    return res.status(400).json({ 
-      message: `Không thể xóa kênh này vì đang được sử dụng trong ${campaignChannels.length} chiến dịch` 
+    return res.status(400).json({
+      message: `Không thể xóa kênh này vì đang được sử dụng trong ${campaignChannels.length} chiến dịch`
     });
   }
-  
+
   try {
     await repo.remove(channel);
     res.json({ message: 'Đã xóa kênh thành công' });
@@ -193,22 +206,22 @@ exports.getChannelStats = async (req, res) => {
     const studentRepo = AppDataSource.getRepository('Student');
     const leadRepo = AppDataSource.getRepository('Lead');
     const courseRepo = AppDataSource.getRepository('Course');
-    
+
     const channels = await repo.find();
-    
+
     const stats = await Promise.all(channels.map(async (channel) => {
       // Đếm số học viên từ channel này
       const students = await studentRepo.find({ where: { channelId: channel.id } });
       const studentsCount = students.length;
-      
+
       // Đếm số học viên mới
       const newStudents = students.filter(s => s.newStudent === true);
       const newStudentsCount = newStudents.length;
-      
+
       // Đếm số leads từ channel này
       const leads = await leadRepo.find({ where: { channelId: channel.id } });
       const leadsCount = leads.length;
-      
+
       // Tính doanh thu từ channel này
       let revenue = 0;
       for (const student of students) {
@@ -219,12 +232,12 @@ exports.getChannelStats = async (req, res) => {
           }
         }
       }
-      
+
       // Đếm số chiến dịch sử dụng channel này
       const campaignChannelRepo = AppDataSource.getRepository('CampaignChannel');
       const campaignChannels = await campaignChannelRepo.find({ where: { channelId: channel.id } });
       const campaignsCount = campaignChannels.length;
-      
+
       return {
         channelId: channel.id,
         channelName: channel.name,
@@ -236,7 +249,7 @@ exports.getChannelStats = async (req, res) => {
         status: channel.status
       };
     }));
-    
+
     res.json(stats);
   } catch (error) {
     console.error('Error getting channel stats:', error);
@@ -250,18 +263,18 @@ exports.getChannelsWithStats = async (req, res) => {
     const { page = 1, size = 10, sortBy, sortDirection } = req.query;
     const pageNum = Math.max(1, Number(page));
     const pageSize = Math.max(1, Number(size));
-    
+
     const repo = AppDataSource.getRepository('Channel');
     const studentRepo = AppDataSource.getRepository('Student');
     const leadRepo = AppDataSource.getRepository('Lead');
     const courseRepo = AppDataSource.getRepository('Course');
     const campaignChannelRepo = AppDataSource.getRepository('CampaignChannel');
-    
+
     let list = await repo.find();
     list = applyFilters(list, req.query);
     const totalItems = list.length;
     list = sortItems(list, sortBy, sortDirection);
-    
+
     // Enrich channels with statistics
     const campaignRepo = AppDataSource.getRepository('Campaign');
     const enrichedChannels = await Promise.all(list.map(async (channel) => {
@@ -271,11 +284,11 @@ exports.getChannelsWithStats = async (req, res) => {
       const convertedStudentsCount = students.filter(s => s.sourceLeadId != null).length;
       const newStudentsCount = students.filter(s => s.newStudent === true).length;
       const leadsCount = (await leadRepo.find({ where: { channelId: channel.id } })).length;
-      
+
       // Tính tỷ lệ chuyển đổi (leads → học viên)
       // Chỉ tính từ students được chuyển đổi từ leads
       const conversionRate = leadsCount > 0 ? ((convertedStudentsCount / leadsCount) * 100).toFixed(2) : 0;
-      
+
       let revenue = 0;
       for (const student of students) {
         if (student.courseId) {
@@ -285,29 +298,24 @@ exports.getChannelsWithStats = async (req, res) => {
           }
         }
       }
-      
+
       // Lấy campaigns đang chạy của channel
       // Tìm qua CampaignChannel (nhiều kênh cho 1 campaign)
       const campaignChannels = await campaignChannelRepo.find({ where: { channelId: channel.id } });
       const campaignIdsFromChannel = campaignChannels.map(cc => cc.campaignId);
-      
-      // Tìm campaigns có channelId trực tiếp (backward compatibility)
-      const directCampaigns = await campaignRepo.find({ where: { channelId: channel.id, status: 'running' } });
-      const directCampaignIds = directCampaigns.map(c => c.id);
-      
+
       // Lấy campaigns từ CampaignChannel có status = 'running'
-      const allCampaignIds = [...new Set([...campaignIdsFromChannel, ...directCampaignIds])];
       let runningCampaigns = [];
-      if (allCampaignIds.length > 0) {
+      if (campaignIdsFromChannel.length > 0) {
         const qb = campaignRepo.createQueryBuilder('campaign');
-        qb.where('campaign.id IN (:...ids)', { ids: allCampaignIds });
+        qb.where('campaign.id IN (:...ids)', { ids: campaignIdsFromChannel });
         qb.andWhere('campaign.status = :status', { status: 'running' });
         runningCampaigns = await qb.getMany();
       }
-      
+
       const runningCampaignsCount = runningCampaigns.length;
       const campaignsCount = (await campaignChannelRepo.find({ where: { channelId: channel.id } })).length;
-      
+
       return {
         ...channel,
         studentsCount,
@@ -324,17 +332,17 @@ exports.getChannelsWithStats = async (req, res) => {
         conversionRate: Number(conversionRate)
       };
     }));
-    
+
     // Apply pagination
     const start = (pageNum - 1) * pageSize;
     const items = enrichedChannels.slice(start, start + pageSize);
-    
-    res.json({ 
-      page: pageNum, 
-      size: pageSize, 
-      totalItems, 
-      totalPages: Math.ceil(totalItems / pageSize), 
-      items 
+
+    res.json({
+      page: pageNum,
+      size: pageSize,
+      totalItems,
+      totalPages: Math.ceil(totalItems / pageSize),
+      items
     });
   } catch (error) {
     console.error('Error getting channels with stats:', error);

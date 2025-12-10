@@ -13,6 +13,9 @@ const FormEmbedPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
+  const [campaignExpired, setCampaignExpired] = useState(false);
+  const [campaignNotStarted, setCampaignNotStarted] = useState(false);
+  const [campaignInfo, setCampaignInfo] = useState(null);
 
   useEffect(() => {
     if (formId) {
@@ -25,6 +28,27 @@ const FormEmbedPage = () => {
       setLoading(true);
       const formData = await formService.getFormById(formId);
       setForm(formData);
+
+      // Kiểm tra thông tin chiến dịch
+      if (formData.campaign) {
+        setCampaignInfo(formData.campaign);
+        const now = new Date();
+        
+        // Kiểm tra chiến dịch đã hết hạn
+        if (formData.campaign.endDate && new Date(formData.campaign.endDate) < now) {
+          setCampaignExpired(true);
+        }
+        
+        // Kiểm tra chiến dịch chưa bắt đầu
+        if (formData.campaign.startDate && new Date(formData.campaign.startDate) > now) {
+          setCampaignNotStarted(true);
+        }
+      }
+
+      // Kiểm tra form đã inactive
+      if (formData.status === 'inactive') {
+        setCampaignExpired(true);
+      }
 
       // Initialize form data với giá trị rỗng
       const initialData = {};
@@ -273,10 +297,46 @@ const FormEmbedPage = () => {
     );
   }
 
-  if (form.status !== 'active') {
+  if (form.status !== 'active' || campaignExpired) {
     return (
       <div className={styles.container}>
-        <div className={styles.error}>Form này hiện không khả dụng</div>
+        <div className={styles.formWrapper}>
+          <div className={styles.error} style={{ textAlign: 'center', padding: '40px 20px' }}>
+            <h2 style={{ color: '#dc3545', marginBottom: '15px' }}>
+              {campaignExpired ? '⏰ Chiến dịch đã kết thúc' : 'Form không khả dụng'}
+            </h2>
+            <p style={{ color: '#666', marginBottom: '10px' }}>
+              {campaignExpired 
+                ? 'Rất tiếc, thời gian đăng ký cho chiến dịch này đã kết thúc.' 
+                : 'Form này hiện không khả dụng.'}
+            </p>
+            {campaignInfo?.endDate && (
+              <p style={{ color: '#999', fontSize: '14px' }}>
+                Ngày kết thúc: {new Date(campaignInfo.endDate).toLocaleDateString('vi-VN')}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (campaignNotStarted) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.formWrapper}>
+          <div className={styles.error} style={{ textAlign: 'center', padding: '40px 20px' }}>
+            <h2 style={{ color: '#ffc107', marginBottom: '15px' }}>
+              ⏳ Chiến dịch chưa bắt đầu
+            </h2>
+            <p style={{ color: '#666', marginBottom: '10px' }}>
+              Chiến dịch này sẽ bắt đầu vào ngày {new Date(campaignInfo?.startDate).toLocaleDateString('vi-VN')}.
+            </p>
+            <p style={{ color: '#999', fontSize: '14px' }}>
+              Vui lòng quay lại sau để đăng ký.
+            </p>
+          </div>
+        </div>
       </div>
     );
   }
