@@ -14,13 +14,15 @@ exports.getRevenue = async (req, res) => {
     const staffRepo = AppDataSource.getRepository('Staff');
     const campaignRepo = AppDataSource.getRepository('Campaign');
     const leadRepo = AppDataSource.getRepository('Lead');
+    const historyRepo = AppDataSource.getRepository('LeadCampaignHistory');
 
-    // Get all students, staff, campaigns, leads
-    const [students, staff, campaigns, leads] = await Promise.all([
+    // Get all students, staff, campaigns, leads, histories
+    const [students, staff, campaigns, leads, histories] = await Promise.all([
       studentRepo.find(),
       staffRepo.find(),
       campaignRepo.find(),
-      leadRepo.find()
+      leadRepo.find(),
+      historyRepo.find()
     ]);
 
     // Filter by date range if provided
@@ -33,7 +35,8 @@ exports.getRevenue = async (req, res) => {
     const totalStudents = students.length;
     const totalTeachers = staff.filter(s => s.role === 'teacher' || s.role === 'instructor').length;
     const totalCampaigns = campaigns.length;
-    const totalPotentialStudents = leads.length;
+    // Đếm HVTN từ số lượng lịch sử tham gia (một người tham gia nhiều chiến dịch = nhiều lần)
+    const totalPotentialStudents = histories.length;
 
     // Calculate revenue data grouped by period (day/week/month)
     const revenueData = [];
@@ -304,12 +307,14 @@ exports.getDashboardStats = async (req, res) => {
     const leadRepo = AppDataSource.getRepository('Lead');
     const channelRepo = AppDataSource.getRepository('Channel');
     const courseRepo = AppDataSource.getRepository('Course');
+    const historyRepo = AppDataSource.getRepository('LeadCampaignHistory');
 
     // Get all data
-    const [allStudents, allCampaigns, allLeads] = await Promise.all([
+    const [allStudents, allCampaigns, allLeads, allHistories] = await Promise.all([
       studentRepo.find(),
       campaignRepo.find(),
-      leadRepo.find()
+      leadRepo.find(),
+      historyRepo.find()
     ]);
 
     // Filter current period
@@ -471,9 +476,9 @@ exports.getDashboardStats = async (req, res) => {
       })
       .reduce((sum, c) => sum + (Number(c.cost) || 0), 0);
 
-    // Calculate total potential students (leads in date range)
-    const totalPotentialStudents = allLeads.filter(l => {
-      const createdAt = new Date(l.createdAt);
+    // Calculate total potential students (từ history thay vì leads để đếm đúng số lần tham gia)
+    const totalPotentialStudents = allHistories.filter(h => {
+      const createdAt = new Date(h.createdAt);
       return createdAt >= start && createdAt <= end;
     }).length;
 
@@ -502,17 +507,29 @@ exports.getDashboardStats = async (req, res) => {
       })
     );
 
-    // Get new students by month
+    // Get new students by month - sử dụng khoảng thời gian từ tham số
     const newStudentsByMonth = [];
     const months = [];
-    for (let i = 5; i >= 0; i--) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+    
+    // Tính toán các tháng cần hiển thị dựa trên startDate và endDate
+    const filterStart = new Date(start);
+    const filterEnd = new Date(end);
+    
+    // Tính số tháng giữa start và end
+    const startMonth = new Date(filterStart.getFullYear(), filterStart.getMonth(), 1);
+    const endMonth = new Date(filterEnd.getFullYear(), filterEnd.getMonth(), 1);
+    
+    // Tạo danh sách các tháng trong khoảng
+    let currentMonth = new Date(startMonth);
+    while (currentMonth <= endMonth) {
+      const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
       months.push({
-        month: date.toLocaleDateString('vi-VN', { month: 'short', year: 'numeric' }),
-        start: date,
+        month: currentMonth.toLocaleDateString('vi-VN', { month: 'short', year: 'numeric' }),
+        start: new Date(currentMonth),
         end: monthEnd
       });
+      // Chuyển sang tháng tiếp theo
+      currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
     }
 
     for (const month of months) {
@@ -560,17 +577,35 @@ exports.getDashboardStats = async (req, res) => {
       newStudentsByCampaignMonth.push(row);
     }
 
-    // Get ROI by campaign
+    // Get ROI by campaign - chỉ lấy các chiến dịch trong khoảng thời gian lọc
+    const filteredCampaigns = allCampaigns.filter(c => {
+      const dateToUse = c.startDate ? new Date(c.startDate) : new Date(c.createdAt);
+      return dateToUse >= start && dateToUse <= end;
+    });
+    
     const roiByCampaign = await Promise.all(
-      allCampaigns.map(async (c) => {
+      filteredCampaigns.map(async (c) => {
         const enriched = await toEnrichedCampaign(c);
+        // Lấy tháng từ startDate hoặc createdAt
+        const dateToUse = c.startDate ? new Date(c.startDate) : new Date(c.createdAt);
+        const monthKey = `${dateToUse.getFullYear()}-${String(dateToUse.getMonth() + 1).padStart(2, '0')}`;
         return {
           id: c.id,
           name: c.name,
-          roi: enriched.roi || 0
+          roi: enriched.roi || 0,
+          month: monthKey,
+          startDate: c.startDate,
+          createdAt: c.createdAt
         };
       })
     );
+
+    // Sắp xếp theo tháng
+    roiByCampaign.sort((a, b) => {
+      if (a.month < b.month) return -1;
+      if (a.month > b.month) return 1;
+      return 0;
+    });
 
     // Get leads and new students by channel
     const leadsByChannel = {};
@@ -649,12 +684,12 @@ exports.getDashboardStats = async (req, res) => {
 // Helper function to calculate campaign metrics
 async function calculateCampaignMetrics(campaignId) {
   const studentRepo = AppDataSource.getRepository('Student');
-  const leadRepo = AppDataSource.getRepository('Lead');
+  const historyRepo = AppDataSource.getRepository('LeadCampaignHistory');
   const courseRepo = AppDataSource.getRepository('Course');
 
-  const [students, leads] = await Promise.all([
+  const [students, histories] = await Promise.all([
     studentRepo.find({ where: { campaignId } }),
-    leadRepo.find({ where: { campaignId } })
+    historyRepo.find({ where: { campaignId } })
   ]);
 
   const newStudents = students.filter(s => s.newStudent === true);
@@ -672,7 +707,7 @@ async function calculateCampaignMetrics(campaignId) {
 
   return {
     newStudentsCount: newStudents.length,
-    potentialStudentsCount: leads.length,
+    potentialStudentsCount: histories.length, // Đếm từ history thay vì leads
     revenue
   };
 }

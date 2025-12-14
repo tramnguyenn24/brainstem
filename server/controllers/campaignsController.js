@@ -11,10 +11,11 @@ async function calculateCampaignMetrics(campaignId) {
   const leadRepo = AppDataSource.getRepository('Lead');
   const studentRepo = AppDataSource.getRepository('Student');
   const courseRepo = AppDataSource.getRepository('Course');
+  const historyRepo = AppDataSource.getRepository('LeadCampaignHistory');
 
-  // Lấy tất cả leads của chiến dịch (HVTN)
-  const leads = await leadRepo.find({ where: { campaignId } });
-  const potentialStudentsCount = leads.length;
+  // Đếm số HVTN từ bảng history (số lần tham gia chiến dịch này)
+  const campaignHistories = await historyRepo.find({ where: { campaignId } });
+  const potentialStudentsCount = campaignHistories.length;
 
   // Lấy tất cả students của chiến dịch
   const students = await studentRepo.find({ where: { campaignId } });
@@ -49,6 +50,7 @@ async function getCampaignChannels(campaignId) {
   const leadRepo = AppDataSource.getRepository('Lead');
   const studentRepo = AppDataSource.getRepository('Student');
   const courseRepo = AppDataSource.getRepository('Course');
+  const historyRepo = AppDataSource.getRepository('LeadCampaignHistory');
 
   const campaignChannels = await campaignChannelRepo.find({
     where: { campaignId },
@@ -58,11 +60,11 @@ async function getCampaignChannels(campaignId) {
   const channelsData = await Promise.all(campaignChannels.map(async (cc) => {
     const channel = await channelRepo.findOne({ where: { id: cc.channelId } });
 
-    // Đếm số HVTN từ kênh này (leads có campaignId và channelId)
-    const leads = await leadRepo.find({
+    // Đếm số HVTN từ kênh này (từ bảng history)
+    const histories = await historyRepo.find({
       where: { campaignId, channelId: cc.channelId }
     });
-    const potentialStudentsCount = leads.length;
+    const potentialStudentsCount = histories.length;
 
     // Đếm số HV mới từ kênh này
     const students = await studentRepo.find({

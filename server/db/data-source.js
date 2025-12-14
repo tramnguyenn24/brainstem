@@ -9,6 +9,7 @@ const Student = require('./entities/Student');
 const Form = require('./entities/Form');
 const Course = require('./entities/Course');
 const CampaignChannel = require('./entities/CampaignChannel');
+const LeadCampaignHistory = require('./entities/LeadCampaignHistory');
 
 const isSslEnabled = (() => {
   const mode = (process.env.PGSSLMODE || '').toLowerCase();
@@ -23,7 +24,7 @@ const AppDataSource = new DataSource({
   username: process.env.PGUSER,
   password: process.env.PGPASSWORD,
   ssl: isSslEnabled ? { rejectUnauthorized: false } : undefined,
-  entities: [Channel, Staff, Campaign, Lead, Student, Form, Course, CampaignChannel],
+  entities: [Channel, Staff, Campaign, Lead, Student, Form, Course, CampaignChannel, LeadCampaignHistory],
   synchronize: false,
   logging: false,
   migrations: ['db/migrations/*.js']

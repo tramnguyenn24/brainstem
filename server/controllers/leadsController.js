@@ -4,14 +4,36 @@ async function toEnrichedLead(lead) {
   const campaignRepo = AppDataSource.getRepository('Campaign');
   const channelRepo = AppDataSource.getRepository('Channel');
   const staffRepo = AppDataSource.getRepository('Staff');
+  const historyRepo = AppDataSource.getRepository('LeadCampaignHistory');
+  
   const campaign = lead.campaignId ? await campaignRepo.findOne({ where: { id: lead.campaignId } }) : null;
   const channel = lead.channelId ? await channelRepo.findOne({ where: { id: lead.channelId } }) : null;
   const staff = lead.assignedStaffId ? await staffRepo.findOne({ where: { id: lead.assignedStaffId } }) : null;
+  
+  // Lấy lịch sử tham gia chiến dịch
+  const campaignHistories = await historyRepo.find({
+    where: { leadId: lead.id },
+    order: { createdAt: 'DESC' }
+  });
+
+  // Enrich history với tên chiến dịch và kênh
+  const enrichedHistories = await Promise.all(campaignHistories.map(async (h) => {
+    const histCampaign = h.campaignId ? await campaignRepo.findOne({ where: { id: h.campaignId } }) : null;
+    const histChannel = h.channelId ? await channelRepo.findOne({ where: { id: h.channelId } }) : null;
+    return {
+      ...h,
+      campaignName: histCampaign ? histCampaign.name : null,
+      channelName: histChannel ? histChannel.name : null
+    };
+  }));
+
   return {
     ...lead,
     campaignName: campaign ? campaign.name : null,
     channelName: channel ? channel.name : null,
-    assignedStaffName: staff ? staff.name : null
+    assignedStaffName: staff ? staff.name : null,
+    campaignHistories: enrichedHistories,
+    campaignCount: enrichedHistories.length
   };
 }
 

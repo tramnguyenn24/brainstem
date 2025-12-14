@@ -425,22 +425,83 @@ exports.submitForm = async (req, res) => {
   email = email || formData.email || formData['email'] || '';
   phone = phone || formData.phone || formData.sdt || formData.sodienthoai || formData['số điện thoại'] || '';
 
-  // Tạo lead từ form data
-  const newLead = {
-    fullName: fullName,
-    email: email,
-    phone: phone,
-    status: 'new',
-    interestLevel: formData.interestLevel || 'medium',
-    campaignId: campaignId,
-    channelId: channelId,
-    formId: form.id, // Track nguồn gốc từ form nào
-    tags: [],
-    createdAt: new Date(),
-    updatedAt: new Date()
-  };
+  // Kiểm tra lead đã tồn tại chưa (theo phone hoặc email)
+  let existingLead = null;
+  if (phone) {
+    existingLead = await leadRepo.findOne({ where: { phone } });
+  }
+  if (!existingLead && email) {
+    existingLead = await leadRepo.findOne({ where: { email } });
+  }
 
-  const saved = await leadRepo.save(newLead);
+  const leadCampaignHistoryRepo = AppDataSource.getRepository('LeadCampaignHistory');
+  let savedLead;
+
+  if (existingLead) {
+    // Lead đã tồn tại - kiểm tra xem đã tham gia chiến dịch này chưa
+    const existingHistory = await leadCampaignHistoryRepo.findOne({
+      where: { leadId: existingLead.id, campaignId: campaignId }
+    });
+
+    if (existingHistory) {
+      // Đã tham gia chiến dịch này rồi
+      return res.status(400).json({
+        success: false,
+        message: 'Bạn đã đăng ký tham gia chiến dịch này rồi.',
+        alreadyRegistered: true
+      });
+    }
+
+    // Cập nhật thông tin lead nếu có thông tin mới
+    if (fullName && !existingLead.fullName) existingLead.fullName = fullName;
+    if (email && !existingLead.email) existingLead.email = email;
+    existingLead.updatedAt = new Date();
+    await leadRepo.save(existingLead);
+    savedLead = existingLead;
+
+    // Tạo lịch sử tham gia chiến dịch mới
+    const newHistory = {
+      leadId: existingLead.id,
+      campaignId: campaignId,
+      channelId: channelId,
+      formId: form.id,
+      status: 'new',
+      interestLevel: formData.interestLevel || 'medium',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    await leadCampaignHistoryRepo.save(newHistory);
+  } else {
+    // Tạo lead mới
+    const newLead = {
+      fullName: fullName,
+      email: email,
+      phone: phone,
+      status: 'new',
+      interestLevel: formData.interestLevel || 'medium',
+      campaignId: campaignId, // Giữ campaignId đầu tiên cho backward compatibility
+      channelId: channelId,
+      formId: form.id,
+      tags: [],
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    savedLead = await leadRepo.save(newLead);
+
+    // Tạo lịch sử tham gia chiến dịch đầu tiên
+    const firstHistory = {
+      leadId: savedLead.id,
+      campaignId: campaignId,
+      channelId: channelId,
+      formId: form.id,
+      status: 'new',
+      interestLevel: formData.interestLevel || 'medium',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    await leadCampaignHistoryRepo.save(firstHistory);
+  }
 
   // Cập nhật metrics của campaign nếu có
   if (campaignId) {
@@ -453,7 +514,8 @@ exports.submitForm = async (req, res) => {
 
   res.status(201).json({
     success: true,
-    message: 'Form submitted successfully',
-    leadId: saved.id
+    message: existingLead ? 'Đã thêm chiến dịch mới vào lịch sử của bạn' : 'Form submitted successfully',
+    leadId: savedLead.id,
+    isExistingLead: !!existingLead
   });
 };

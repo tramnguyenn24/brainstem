@@ -7,7 +7,7 @@ import { studentService } from './api/student/studentService';
 import styles from './dashboard.module.css';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
-import { BarChartCard, LineChartCard, StackedBarChartCard } from './components/charts';
+import { BarChartCard, LineChartCard, StackedBarChartCard, ComboChartCard } from './components/charts';
 
 const Dashboard = () => {
   const [campaigns, setCampaigns] = useState([]);
@@ -19,6 +19,18 @@ const Dashboard = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [selectedCampaigns, setSelectedCampaigns] = useState([]); // Chiến dịch được chọn trong chart
+
+  // Bộ lọc riêng cho biểu đồ - mặc định 6 tháng gần nhất
+  const getDefaultChartDates = () => {
+    const now = new Date();
+    const endDate = now.toISOString().split('T')[0]; // Hôm nay
+    const startDate = new Date(now.getFullYear(), now.getMonth() - 5, 1).toISOString().split('T')[0]; // 6 tháng trước (đầu tháng)
+    return { startDate, endDate };
+  };
+  const defaultChartDates = getDefaultChartDates();
+  const [chartStartDate, setChartStartDate] = useState(defaultChartDates.startDate);
+  const [chartEndDate, setChartEndDate] = useState(defaultChartDates.endDate);
+  const [chartStats, setChartStats] = useState(null);
 
   // Bộ lọc phía client (chỉ lọc trên dữ liệu đã fetch sẵn)
   const [campaignSearch, setCampaignSearch] = useState('');
@@ -122,6 +134,46 @@ const Dashboard = () => {
     fetchDashboardData();
   }, [startDate, endDate]);
 
+  // Fetch chart data với bộ lọc riêng
+  useEffect(() => {
+    // Chỉ chạy API khi cả hai ngày đều được chọn hoặc đều trống
+    if ((chartStartDate && !chartEndDate) || (!chartStartDate && chartEndDate)) {
+      return;
+    }
+
+    // Validate nếu cả hai đều được chọn
+    if (chartStartDate && chartEndDate) {
+      const start = new Date(chartStartDate);
+      const end = new Date(chartEndDate);
+
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        toast.error("Ngày lọc biểu đồ không hợp lệ!", { duration: 3000, position: "top-center" });
+        return;
+      }
+
+      if (start > end) {
+        toast.error("Ngày bắt đầu phải nhỏ hơn ngày kết thúc!", { duration: 3000, position: "top-center" });
+        return;
+      }
+    }
+
+    const fetchChartData = async () => {
+      try {
+        const statsResponse = await statisticService.getDashboardStats(
+          chartStartDate || undefined, 
+          chartEndDate || undefined
+        );
+        if (statsResponse) {
+          setChartStats(statsResponse);
+        }
+      } catch (err) {
+        console.error("Error fetching chart data:", err);
+      }
+    };
+    
+    fetchChartData();
+  }, [chartStartDate, chartEndDate]);
+
   // Format currency
   const formatCurrency = (value) => {
     if (!value) return '0 ₫';
@@ -190,8 +242,9 @@ const Dashboard = () => {
   const totalPotentialStudents = quickStats.totalPotentialStudents || 0;
   const totalRegisteredStudents = quickStats.totalRegisteredStudents || 0;
   
-  // Get chart data
-  const charts = dashboardStats?.charts || {};
+  // Get chart data - sử dụng chartStats nếu có, fallback về dashboardStats
+  const chartData = chartStats || dashboardStats;
+  const charts = chartData?.charts || {};
   const newStudentsByCampaign = charts.newStudentsByCampaign || [];
   const newStudentsByMonth = charts.newStudentsByMonth || [];
   const newStudentsByCampaignMonth = charts.newStudentsByCampaignMonth || [];
@@ -304,8 +357,8 @@ const Dashboard = () => {
             <div style={{fontSize: '2.5rem', fontWeight: 700, marginBottom: 8, color: '#fff'}}>
               {summary.totalRevenue?.formatted || formatCurrency(totalRevenue)}
             </div>
-            <div style={{fontSize: '0.8125rem', color: '#4ade80', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 500}}>
-              <span>↗ {revenueChange > 0 ? '+' : ''}{revenueChange}%</span> 
+            <div style={{fontSize: '0.8125rem', color: revenueChange >= 0 ? '#4ade80' : '#ef4444', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 500}}>
+              <span>{revenueChange >= 0 ? '↗' : '↘'} {revenueChange > 0 ? '+' : ''}{revenueChange}%</span> 
               <span style={{color: 'rgba(255,255,255,0.7)'}}>so với tháng trước</span>
             </div>
           </div>
@@ -325,8 +378,8 @@ const Dashboard = () => {
             <div style={{fontSize: '2.5rem', fontWeight: 700, marginBottom: 8, color: '#fff'}}>
               {summary.registeredStudents?.formatted || formatNumber(totalStudents)}
             </div>
-            <div style={{fontSize: '0.8125rem', color: '#4ade80', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 500}}>
-              <span>↗ {studentsChange > 0 ? '+' : ''}{studentsChange}%</span> 
+            <div style={{fontSize: '0.8125rem', color: studentsChange >= 0 ? '#4ade80' : '#ef4444', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 500}}>
+              <span>{studentsChange >= 0 ? '↗' : '↘'} {studentsChange > 0 ? '+' : ''}{studentsChange}%</span> 
               <span style={{color: 'rgba(255,255,255,0.7)'}}>so với tháng trước</span>
             </div>
           </div>
@@ -346,8 +399,8 @@ const Dashboard = () => {
             <div style={{fontSize: '2.5rem', fontWeight: 700, marginBottom: 8, color: '#fff'}}>
               {summary.currentlyStudying?.formatted || formatNumber(activeStudents)}
             </div>
-            <div style={{fontSize: '0.8125rem', color: '#4ade80', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 500}}>
-              <span>↗ {activeChange > 0 ? '+' : ''}{activeChange}%</span> 
+            <div style={{fontSize: '0.8125rem', color: activeChange >= 0 ? '#4ade80' : '#ef4444', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 500}}>
+              <span>{activeChange >= 0 ? '↗' : '↘'} {activeChange > 0 ? '+' : ''}{activeChange}%</span> 
               <span style={{color: 'rgba(255,255,255,0.7)'}}>so với tháng trước</span>
             </div>
           </div>
@@ -367,8 +420,8 @@ const Dashboard = () => {
             <div style={{fontSize: '2.5rem', fontWeight: 700, marginBottom: 8, color: '#fff'}}>
               {summary.completionRate?.formatted || `${completionRate.toFixed(1)}%`}
             </div>
-            <div style={{fontSize: '0.8125rem', color: '#4ade80', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 500}}>
-              <span>↗ {completionChange > 0 ? '+' : ''}{completionChange}%</span> 
+            <div style={{fontSize: '0.8125rem', color: completionChange >= 0 ? '#4ade80' : '#ef4444', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 500}}>
+              <span>{completionChange >= 0 ? '↗' : '↘'} {completionChange > 0 ? '+' : ''}{completionChange}%</span> 
               <span style={{color: 'rgba(255,255,255,0.7)'}}>so với tháng trước</span>
             </div>
           </div>
@@ -438,9 +491,82 @@ const Dashboard = () => {
         </div>
 
         {/* Charts Section */}
-        <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(500px, 1fr))', gap: '24px', marginBottom: 32}}>
-            {/* Chart 1: New Students by Campaign & Month (Stacked Bar) */}
-            {newStudentsByCampaignMonth.length > 0 && campaignBars.length > 0 && (
+        <div style={{
+          background: 'linear-gradient(135deg, #1f2937 0%, #374151 100%)',
+          border: '1px solid #4b5563',
+          borderRadius: '16px',
+          padding: '24px',
+          marginBottom: 32
+        }}>
+          {/* Header với bộ lọc thời gian */}
+          <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px'}}>
+            <h2 style={{fontSize: '1.5rem', fontWeight: 600, color: '#dee2e6', margin: 0}}>
+              📊 Biểu đồ thống kê
+            </h2>
+            <div style={{display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap'}}>
+              <span style={{color: '#aab8c5', fontSize: '0.875rem'}}>Lọc theo thời gian:</span>
+              <input
+                type="date"
+                value={chartStartDate}
+                onChange={(e) => setChartStartDate(e.target.value)}
+                max={chartEndDate || undefined}
+                style={{
+                  padding: '8px 12px',
+                  background: '#313a46',
+                  border: '1px solid #404954',
+                  borderRadius: '6px',
+                  color: '#dee2e6',
+                  fontSize: '0.875rem'
+                }}
+                placeholder="Từ ngày"
+              />
+              <span style={{color: '#aab8c5'}}>→</span>
+              <input
+                type="date"
+                value={chartEndDate}
+                onChange={(e) => setChartEndDate(e.target.value)}
+                min={chartStartDate || undefined}
+                style={{
+                  padding: '8px 12px',
+                  background: '#313a46',
+                  border: '1px solid #404954',
+                  borderRadius: '6px',
+                  color: '#dee2e6',
+                  fontSize: '0.875rem'
+                }}
+                placeholder="Đến ngày"
+              />
+              {(chartStartDate !== defaultChartDates.startDate || chartEndDate !== defaultChartDates.endDate) && (
+                <button
+                  onClick={() => {
+                    setChartStartDate(defaultChartDates.startDate);
+                    setChartEndDate(defaultChartDates.endDate);
+                    setChartStats(null); // Reset về 6 tháng mặc định
+                  }}
+                  style={{
+                    padding: '8px 16px',
+                    background: '#ef4444',
+                    border: 'none',
+                    borderRadius: '6px',
+                    color: 'white',
+                    fontSize: '0.875rem',
+                    cursor: 'pointer',
+                    fontWeight: 500,
+                    transition: 'background 0.2s'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = '#dc2626'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = '#ef4444'}
+                >
+                  Xóa bộ lọc
+                </button>
+              )}
+            </div>
+          </div>
+          
+          {/* Charts Grid */}
+          <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(500px, 1fr))', gap: '24px'}}>
+            {/* Combo Chart: New Students by Campaign & Month with Total Line - Luôn hiển thị */}
+            {
               <div style={{
                 background: 'linear-gradient(135deg, #1f2937 0%, #374151 100%)',
                 border: '1px solid #4b5563',
@@ -448,14 +574,68 @@ const Dashboard = () => {
                 padding: '24px'
               }}>
                 <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
-                  <h3 style={{
-                    fontSize: '1.25rem',
-                    fontWeight: 600,
-                    margin: 0,
-                    color: '#dee2e6'
-                  }}>
-                    HV mới theo Chiến dịch và Tháng
-                  </h3>
+                  {selectedCampaigns.length > 0 && (
+                    <button
+                      onClick={() => setSelectedCampaigns([])}
+                      style={{
+                        padding: '6px 12px',
+                        background: '#727cf5',
+                        border: 'none',
+                        borderRadius: '6px',
+                        color: 'white',
+                        fontSize: '0.875rem',
+                        cursor: 'pointer',
+                        fontWeight: 500,
+                        transition: 'background 0.2s'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = '#5b64d4'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = '#727cf5'}
+                    >
+                      Hiển thị tất cả
+                    </button>
+                  )}
+                </div>
+                <ComboChartCard
+                  title="HV mới theo Chiến dịch và Tháng"
+                  data={newStudentsByCampaignMonth.map((monthData, idx) => {
+                    const dataPoint = { name: monthData.month };
+                    // Thêm tất cả campaigns vào data (cột)
+                    campaignNamesArray.forEach(campaignName => {
+                      dataPoint[campaignName] = monthData[campaignName] || 0;
+                    });
+                    // Thêm tổng số HV mới theo tháng (đường)
+                    if (idx < newStudentsByMonth.length) {
+                      dataPoint['Tổng HV mới'] = newStudentsByMonth[idx].count || 0;
+                    }
+                    return dataPoint;
+                  })}
+                  dataKey="name"
+                  bars={allCampaignBars} // Luôn truyền tất cả bars để legend hiển thị đầy đủ
+                  lines={[{
+                    dataKey: 'Tổng HV mới',
+                    name: 'Tổng HV mới',
+                    color: '#ffffff',
+                    strokeWidth: 3
+                  }]}
+                  xAxisLabel="Tháng"
+                  yAxisLabel="Số lượng"
+                  height={400}
+                  colors={{ primary: '#727cf5', secondary: '#ffffff' }}
+                  onLegendClick={handleLegendClick}
+                  selectedCampaigns={selectedCampaigns}
+                />
+              </div>
+            }
+
+            {/* Fallback: Chart 1 - New Students by Campaign & Month (Stacked Bar) - Không dùng nữa vì đã có combo chart */}
+            {false && newStudentsByCampaignMonth.length > 0 && campaignBars.length > 0 && (!newStudentsByMonth || newStudentsByMonth.length === 0) && (
+              <div style={{
+                background: 'linear-gradient(135deg, #1f2937 0%, #374151 100%)',
+                border: '1px solid #4b5563',
+                borderRadius: '16px',
+                padding: '24px'
+              }}>
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
                   {selectedCampaigns.length > 0 && (
                     <button
                       onClick={() => setSelectedCampaigns([])}
@@ -481,14 +661,13 @@ const Dashboard = () => {
                   title="HV mới theo Chiến dịch và Tháng"
                   data={newStudentsByCampaignMonth.map(monthData => {
                     const dataPoint = { name: monthData.month };
-                    // Thêm tất cả campaigns vào data (để legend hoạt động đúng)
                     campaignNamesArray.forEach(campaignName => {
                       dataPoint[campaignName] = monthData[campaignName] || 0;
                     });
                     return dataPoint;
                   })}
                   dataKey="name"
-                  bars={allCampaignBars} // Luôn truyền tất cả bars để legend hiển thị đầy đủ
+                  bars={allCampaignBars}
                   xAxisLabel="Tháng"
                   yAxisLabel="Số lượng"
                   height={400}
@@ -499,8 +678,8 @@ const Dashboard = () => {
               </div>
             )}
 
-            {/* Chart 2: New Students by Month (Line) */}
-            {newStudentsByMonth.length > 0 && (
+            {/* Fallback: Chart 2 - New Students by Month (Line) - Không dùng nữa vì đã gộp vào combo chart */}
+            {false && newStudentsByMonth.length > 0 && (!newStudentsByCampaignMonth || newStudentsByCampaignMonth.length === 0) && (
               <LineChartCard
                 title="HV mới theo Tháng"
                 data={newStudentsByMonth.map(m => ({
@@ -520,12 +699,12 @@ const Dashboard = () => {
                 />
             )}
 
-            {/* Chart 3: ROI by Campaign */}
-            {roiByCampaign.length > 0 && (
+            {/* Chart 3: ROI by Campaign - Luôn hiển thị */}
+            {
               <BarChartCard
                 title="ROI theo Chiến dịch"
                 data={roiByCampaign.map(c => ({
-                  name: c.name,
+                  name: c.month ? `${c.name} (${c.month})` : c.name,
                   'ROI (%)': c.roi
                 }))}
                 dataKey="name"
@@ -534,7 +713,7 @@ const Dashboard = () => {
                   name: 'ROI (%)',
                     color: '#f9ca24'
                   }]}
-                xAxisLabel="Chiến dịch"
+                xAxisLabel="Chiến dịch (theo tháng)"
                 yAxisLabel="ROI (%)"
                 height={400}
                 colors={{ primary: '#f9ca24' }}
@@ -542,7 +721,7 @@ const Dashboard = () => {
                 yAxisFormatter={undefined}
                 tooltipFormatter={undefined}
                 />
-            )}
+            }
 
             {/* Chart 4: Stacked Bar - Leads and New Students by Channel */}
             {channelStats.length > 0 && (
@@ -577,6 +756,7 @@ const Dashboard = () => {
               </div>
             )}
           </div>
+        </div>
 
         {/* Campaigns section */}
         <div style={{marginBottom: 32}}>

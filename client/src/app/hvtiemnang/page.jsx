@@ -535,13 +535,14 @@ const Page = () => {
             <td>Giới tính</td>
             <td>Trạng thái</td>
             <td>Chiến dịch</td>
+            <td>Số CD tham gia</td>
             <td>Thao tác</td>
           </tr>
         </thead>
         <tbody>
           {leads.length === 0 ? (
             <tr>
-              <td colSpan={8} className={Style.noData}>
+              <td colSpan={9} className={Style.noData}>
                 Không có dữ liệu
               </td>
             </tr>
@@ -560,6 +561,18 @@ const Page = () => {
                     </span>
                   </td>
                   <td>{lead.campaignName || 'N/A'}</td>
+                  <td>
+                    <span style={{
+                      padding: '4px 10px',
+                      borderRadius: '12px',
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                      background: (lead.campaignCount || 0) > 1 ? '#727cf5' : '#4b5563',
+                      color: '#fff'
+                    }}>
+                      {lead.campaignCount || (lead.campaignHistories?.length || 0)}
+                    </span>
+                  </td>
                   <td>
                     <div className={Style.buttons}>
                       <button 
@@ -760,6 +773,112 @@ const Page = () => {
                 <label>Ngày đăng ký:</label>
                 <span>{new Date(selectedLead?.NgayDangKy).toLocaleString('vi-VN')}</span>
               </div>
+
+              {/* Lịch sử tham gia chiến dịch */}
+              {selectedLead?.campaignHistories && selectedLead.campaignHistories.length > 0 && (
+                <div style={{ 
+                  marginTop: '20px', 
+                  paddingTop: '20px', 
+                  borderTop: '1px solid var(--border)' 
+                }}>
+                  <h3 style={{ 
+                    marginBottom: '15px', 
+                    fontSize: '16px', 
+                    fontWeight: 600,
+                    color: '#dee2e6'
+                  }}>
+                    📋 Lịch sử tham gia chiến dịch ({selectedLead.campaignHistories.length})
+                  </h3>
+                  <div style={{ 
+                    maxHeight: '200px', 
+                    overflowY: 'auto',
+                    background: '#1f2937',
+                    borderRadius: '8px',
+                    padding: '12px'
+                  }}>
+                    {selectedLead.campaignHistories.map((history, index) => (
+                      <div 
+                        key={history.id || index}
+                        style={{
+                          padding: '12px',
+                          background: index % 2 === 0 ? '#2d3748' : '#374151',
+                          borderRadius: '6px',
+                          marginBottom: index < selectedLead.campaignHistories.length - 1 ? '8px' : 0
+                        }}
+                      >
+                        <div style={{ 
+                          display: 'flex', 
+                          justifyContent: 'space-between', 
+                          alignItems: 'center',
+                          marginBottom: '8px'
+                        }}>
+                          <span style={{ 
+                            fontWeight: 600, 
+                            color: '#727cf5',
+                            fontSize: '0.95rem'
+                          }}>
+                            🚀 {history.campaignName || 'Chiến dịch không xác định'}
+                          </span>
+                          <span style={{
+                            padding: '2px 8px',
+                            borderRadius: '4px',
+                            fontSize: '0.75rem',
+                            fontWeight: 500,
+                            background: history.status === 'converted' ? '#10b981' : 
+                                       history.status === 'contacted' ? '#3b82f6' :
+                                       history.status === 'qualified' ? '#f59e0b' : '#6b7280',
+                            color: '#fff'
+                          }}>
+                            {history.status === 'converted' ? 'Đã chuyển đổi' :
+                             history.status === 'contacted' ? 'Đã liên hệ' :
+                             history.status === 'qualified' ? 'Đủ điều kiện' :
+                             history.status === 'new' ? 'Mới' : history.status}
+                          </span>
+                        </div>
+                        <div style={{ 
+                          fontSize: '0.85rem', 
+                          color: '#aab8c5',
+                          display: 'flex',
+                          gap: '20px',
+                          flexWrap: 'wrap'
+                        }}>
+                          <span>📡 Kênh: {history.channelName || 'N/A'}</span>
+                          <span>📅 Ngày: {history.createdAt ? new Date(history.createdAt).toLocaleDateString('vi-VN') : 'N/A'}</span>
+                          <span>⭐ Mức quan tâm: {
+                            history.interestLevel === 'high' ? 'Cao' :
+                            history.interestLevel === 'medium' ? 'Trung bình' :
+                            history.interestLevel === 'low' ? 'Thấp' : history.interestLevel || 'N/A'
+                          }</span>
+                        </div>
+                        {history.notes && (
+                          <div style={{ 
+                            marginTop: '8px', 
+                            fontSize: '0.85rem', 
+                            color: '#8391a2',
+                            fontStyle: 'italic'
+                          }}>
+                            📝 {history.notes}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Thông báo nếu chưa có lịch sử */}
+              {(!selectedLead?.campaignHistories || selectedLead.campaignHistories.length === 0) && (
+                <div style={{ 
+                  marginTop: '20px', 
+                  paddingTop: '20px', 
+                  borderTop: '1px solid var(--border)',
+                  color: '#8391a2',
+                  fontStyle: 'italic',
+                  textAlign: 'center'
+                }}>
+                  📋 Chưa có lịch sử tham gia chiến dịch
+                </div>
+              )}
             </div>
             <div className={Style.modalButtons}>
               <button 

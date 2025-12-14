@@ -36,6 +36,9 @@ const Page = () => {
     budget: '0',
     spend: '0',
     roi: '0',
+    // Thời gian chiến dịch
+    startDate: '',
+    endDate: '',
     // Mục tiêu chiến dịch
     targetLeads: '0',
     targetNewStudents: '0',
@@ -326,6 +329,9 @@ const Page = () => {
       budget: campaign.budget ? String(campaign.budget) : '0',
       spend: campaign.spend ? String(campaign.spend) : '0',
       roi: campaign.roi ? String(campaign.roi) : '0',
+      // Thời gian chiến dịch
+      startDate: campaign.startDate ? campaign.startDate.split('T')[0] : '',
+      endDate: campaign.endDate ? campaign.endDate.split('T')[0] : '',
       // Mục tiêu chiến dịch
       targetLeads: campaign.targetLeads ? String(campaign.targetLeads) : '0',
       targetNewStudents: campaign.targetNewStudents ? String(campaign.targetNewStudents) : '0',
@@ -389,6 +395,9 @@ const Page = () => {
         budget: editForm.budget ? Number(editForm.budget) : 0,
         spend: editForm.spend ? Number(editForm.spend) : 0,
         roi: editForm.roi ? Number(editForm.roi) : 0,
+        // Thời gian chiến dịch
+        startDate: editForm.startDate || null,
+        endDate: editForm.endDate || null,
         // Mục tiêu chiến dịch
         targetLeads: editForm.targetLeads ? Number(editForm.targetLeads) : 0,
         targetNewStudents: editForm.targetNewStudents ? Number(editForm.targetNewStudents) : 0,
@@ -1026,6 +1035,38 @@ const Page = () => {
                   onChange={(e) => setEditForm({ ...editForm, roi: e.target.value })}
                   min="0"
                 />
+              </div>
+
+              {/* Thời gian chiến dịch */}
+              <div style={{ 
+                marginTop: '20px', 
+                paddingTop: '20px', 
+                borderTop: '1px solid var(--border)',
+                marginBottom: '20px'
+              }}>
+                <h3 style={{ marginBottom: '15px', fontSize: '16px', fontWeight: 600 }}>
+                  📅 Thời gian chiến dịch
+                </h3>
+                
+                <div className={Style.formGroup}>
+                  <label>Ngày bắt đầu:</label>
+                  <input
+                    type="date"
+                    value={editForm.startDate}
+                    onChange={(e) => setEditForm({ ...editForm, startDate: e.target.value })}
+                    max={editForm.endDate || undefined}
+                  />
+                </div>
+
+                <div className={Style.formGroup}>
+                  <label>Ngày kết thúc:</label>
+                  <input
+                    type="date"
+                    value={editForm.endDate}
+                    onChange={(e) => setEditForm({ ...editForm, endDate: e.target.value })}
+                    min={editForm.startDate || undefined}
+                  />
+                </div>
               </div>
 
               {/* Mục tiêu chiến dịch */}
