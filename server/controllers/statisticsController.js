@@ -587,7 +587,6 @@ exports.getDashboardStats = async (req, res) => {
         return (
           createdAt >= month.start &&
           createdAt <= month.end &&
-          s.newStudent === true &&
           s.campaignId != null
         );
       });
