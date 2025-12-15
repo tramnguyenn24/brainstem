@@ -1,4 +1,5 @@
 const { AppDataSource } = require('../db/data-source');
+const { Not, IsNull } = require('typeorm');
 
 function applyFilters(items, query) {
   const { type, status, month, startMonth, endMonth, search } = query;
@@ -284,32 +285,68 @@ exports.getChannelsWithStats = async (req, res) => {
 
     // Enrich channels with statistics
     const campaignRepo = AppDataSource.getRepository('Campaign');
+    const historyRepo = AppDataSource.getRepository('LeadCampaignHistory');
     const enrichedChannels = await Promise.all(list.map(async (channel) => {
-      const students = await studentRepo.find({ where: { channelId: channel.id } });
-      const studentsCount = students.length;
-      // Chỉ đếm students được chuyển đổi từ leads (có sourceLeadId)
-      const convertedStudentsCount = students.filter(s => s.sourceLeadId != null).length;
-      const newStudentsCount = students.filter(s => s.newStudent === true).length;
-      const leadsCount = (await leadRepo.find({ where: { channelId: channel.id } })).length;
+      // Lấy tất cả campaigns mà kênh tham gia
+      const campaignChannels = await campaignChannelRepo.find({ where: { channelId: channel.id } });
+      const campaignIdsFromChannel = campaignChannels.map(cc => cc.campaignId);
 
-      // Tính tỷ lệ chuyển đổi (leads → học viên)
-      // Chỉ tính từ students được chuyển đổi từ leads
-      const conversionRate = leadsCount > 0 ? ((convertedStudentsCount / leadsCount) * 100).toFixed(2) : 0;
-
+      // Đếm học viên mới từ các chiến dịch mà kênh tham gia
+      // Học viên mới = students có sourceLeadId và lead cuối cùng thuộc campaign của kênh này
+      let newStudentsCount = 0;
       let revenue = 0;
-      for (const student of students) {
-        if (student.courseId) {
-          const course = await courseRepo.findOne({ where: { id: student.courseId } });
-          if (course && course.price) {
-            revenue += Number(course.price);
+
+      if (campaignIdsFromChannel.length > 0) {
+        // Lấy tất cả students có sourceLeadId (được chuyển đổi từ lead)
+        const allConvertedStudents = await studentRepo.find({
+          where: { sourceLeadId: Not(IsNull()) }
+        });
+
+        for (const student of allConvertedStudents) {
+          // Tìm campaign cuối cùng của lead này
+          const lastHistory = await historyRepo.findOne({
+            where: { leadId: student.sourceLeadId },
+            order: { createdAt: 'DESC' }
+          });
+
+          // Nếu campaign cuối cùng thuộc kênh này
+          if (lastHistory && campaignIdsFromChannel.includes(lastHistory.campaignId)) {
+            // Áp dụng bộ lọc ngày nếu có
+            let includeStudent = true;
+            if (filterStartDate || filterEndDate) {
+              const studentCreatedAt = new Date(student.createdAt);
+              if (filterStartDate && studentCreatedAt < filterStartDate) {
+                includeStudent = false;
+              }
+              if (filterEndDate && studentCreatedAt > filterEndDate) {
+                includeStudent = false;
+              }
+            }
+
+            if (includeStudent) {
+              newStudentsCount++;
+              // Tính doanh thu từ khóa học của student
+              if (student.courseId) {
+                const course = await courseRepo.findOne({ where: { id: student.courseId } });
+                if (course && course.price) {
+                  revenue += Number(course.price);
+                }
+              }
+            }
           }
         }
       }
 
-      // Lấy campaigns của channel
-      // Tìm qua CampaignChannel (nhiều kênh cho 1 campaign)
-      const campaignChannels = await campaignChannelRepo.find({ where: { channelId: channel.id } });
-      const campaignIdsFromChannel = campaignChannels.map(cc => cc.campaignId);
+      // Đếm số leads của kênh
+      const leadsCount = (await leadRepo.find({ where: { channelId: channel.id } })).length;
+
+      // Đếm số students được chuyển đổi từ leads của kênh này
+      const students = await studentRepo.find({ where: { channelId: channel.id } });
+      const studentsCount = students.length;
+      const convertedStudentsCount = students.filter(s => s.sourceLeadId != null).length;
+
+      // Tính tỷ lệ chuyển đổi (leads → học viên)
+      const conversionRate = leadsCount > 0 ? ((convertedStudentsCount / leadsCount) * 100).toFixed(2) : 0;
 
       // Lấy campaigns từ CampaignChannel có status = 'running'
       // Nếu có date filter, lọc những campaigns có thời gian trùng với khoảng lọc
@@ -335,7 +372,7 @@ exports.getChannelsWithStats = async (req, res) => {
       }
 
       const runningCampaignsCount = runningCampaigns.length;
-      const campaignsCount = (await campaignChannelRepo.find({ where: { channelId: channel.id } })).length;
+      const campaignsCount = campaignIdsFromChannel.length;
 
       return {
         ...channel,
