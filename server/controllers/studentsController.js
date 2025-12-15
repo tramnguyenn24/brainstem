@@ -5,16 +5,42 @@ async function toEnrichedStudent(s) {
   const channelRepo = AppDataSource.getRepository('Channel');
   const staffRepo = AppDataSource.getRepository('Staff');
   const courseRepo = AppDataSource.getRepository('Course');
+  const historyRepo = AppDataSource.getRepository('LeadCampaignHistory');
 
-  const campaign = s.campaignId ? await campaignRepo.findOne({ where: { id: s.campaignId } }) : null;
-  const channel = s.channelId ? await channelRepo.findOne({ where: { id: s.channelId } }) : null;
+  // Lấy chiến dịch gần nhất từ LeadCampaignHistory nếu có sourceLeadId
+  let latestCampaign = null;
+  let latestChannel = null;
+
+  if (s.sourceLeadId) {
+    // Tìm entry gần nhất trong history (sắp xếp theo createdAt DESC)
+    const latestHistory = await historyRepo.findOne({
+      where: { leadId: s.sourceLeadId },
+      order: { createdAt: 'DESC' }
+    });
+
+    if (latestHistory && latestHistory.campaignId) {
+      latestCampaign = await campaignRepo.findOne({ where: { id: latestHistory.campaignId } });
+    }
+    if (latestHistory && latestHistory.channelId) {
+      latestChannel = await channelRepo.findOne({ where: { id: latestHistory.channelId } });
+    }
+  }
+
+  // Fallback: nếu không có history hoặc không có sourceLeadId, dùng campaignId trực tiếp
+  if (!latestCampaign) {
+    latestCampaign = s.campaignId ? await campaignRepo.findOne({ where: { id: s.campaignId } }) : null;
+  }
+  if (!latestChannel) {
+    latestChannel = s.channelId ? await channelRepo.findOne({ where: { id: s.channelId } }) : null;
+  }
+
   const staff = s.assignedStaffId ? await staffRepo.findOne({ where: { id: s.assignedStaffId } }) : null;
   const course = s.courseId ? await courseRepo.findOne({ where: { id: s.courseId } }) : null;
 
   return {
     ...s,
-    campaignName: campaign ? campaign.name : null,
-    channelName: channel ? channel.name : null,
+    campaignName: latestCampaign ? latestCampaign.name : null, // Chiến dịch gần nhất
+    channelName: latestChannel ? latestChannel.name : null, // Kênh từ chiến dịch gần nhất
     assignedStaffName: staff ? staff.name : null,
     courseName: course ? course.name : null,
     tuitionFee: course ? Number(course.price) : null,
