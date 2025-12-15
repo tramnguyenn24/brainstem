@@ -17,21 +17,35 @@ async function calculateCampaignMetrics(campaignId) {
   const campaignHistories = await historyRepo.find({ where: { campaignId } });
   const potentialStudentsCount = campaignHistories.length;
 
-  // Lấy tất cả students của chiến dịch
-  const students = await studentRepo.find({ where: { campaignId } });
+  // Lấy tất cả students được convert từ Lead (có sourceLeadId)
+  const allStudents = await studentRepo.find();
+  const convertedStudents = allStudents.filter(s => s.sourceLeadId != null);
 
-  // Đếm số HV mới được chuyển đổi từ leads (new_student = true và có sourceLeadId)
-  // Chỉ tính students được chuyển đổi từ leads để tỷ lệ chuyển đổi không vượt quá 100%
-  const newStudents = students.filter(s => s.newStudent === true && s.sourceLeadId != null);
-  const newStudentsCount = newStudents.length;
-
-  // Tính doanh thu từ khóa học
+  // Đếm số HV mới: những student được convert và chiến dịch cuối cùng của Lead là chiến dịch này
+  let newStudentsCount = 0;
   let revenue = 0;
-  for (const student of students) {
-    if (student.courseId) {
-      const course = await courseRepo.findOne({ where: { id: student.courseId } });
-      if (course && course.price) {
-        revenue += Number(course.price);
+
+  for (const student of convertedStudents) {
+    // Tìm lịch sử chiến dịch của Lead nguồn, sắp xếp theo thời gian mới nhất
+    const leadHistories = await historyRepo.find({
+      where: { leadId: student.sourceLeadId },
+      order: { createdAt: 'DESC' }
+    });
+
+    // Lấy chiến dịch cuối cùng mà Lead tham gia
+    const lastCampaignHistory = leadHistories.length > 0 ? leadHistories[0] : null;
+
+    // Nếu chiến dịch cuối cùng của Lead trùng với chiến dịch đang xem
+    if (lastCampaignHistory && lastCampaignHistory.campaignId === campaignId) {
+      // Đếm là học viên mới của chiến dịch này
+      newStudentsCount++;
+
+      // Tính doanh thu từ khóa học của student
+      if (student.courseId) {
+        const course = await courseRepo.findOne({ where: { id: student.courseId } });
+        if (course && course.price) {
+          revenue += Number(course.price);
+        }
       }
     }
   }
@@ -66,22 +80,37 @@ async function getCampaignChannels(campaignId) {
     });
     const potentialStudentsCount = histories.length;
 
-    // Đếm số HV mới từ kênh này
-    const students = await studentRepo.find({
-      where: { campaignId, channelId: cc.channelId, newStudent: true }
-    });
-    const newStudentsCount = students.length;
+    // Lấy tất cả students được convert từ Lead (có sourceLeadId)
+    const allStudents = await studentRepo.find();
+    const convertedStudents = allStudents.filter(s => s.sourceLeadId != null);
 
-    // Tính doanh thu từ kênh này
+    // Đếm số HV mới và tính doanh thu từ kênh này
+    // Chỉ tính những student có chiến dịch cuối cùng là chiến dịch này VÀ kênh trùng khớp
+    let newStudentsCount = 0;
     let revenue = 0;
-    const allStudents = await studentRepo.find({
-      where: { campaignId, channelId: cc.channelId }
-    });
-    for (const student of allStudents) {
-      if (student.courseId) {
-        const course = await courseRepo.findOne({ where: { id: student.courseId } });
-        if (course && course.price) {
-          revenue += Number(course.price);
+
+    for (const student of convertedStudents) {
+      // Tìm lịch sử chiến dịch của Lead nguồn, sắp xếp theo thời gian mới nhất
+      const leadHistories = await historyRepo.find({
+        where: { leadId: student.sourceLeadId },
+        order: { createdAt: 'DESC' }
+      });
+
+      // Lấy chiến dịch cuối cùng mà Lead tham gia
+      const lastCampaignHistory = leadHistories.length > 0 ? leadHistories[0] : null;
+
+      // Nếu chiến dịch cuối cùng là chiến dịch này VÀ kênh trùng khớp
+      if (lastCampaignHistory &&
+        lastCampaignHistory.campaignId === campaignId &&
+        lastCampaignHistory.channelId === cc.channelId) {
+        newStudentsCount++;
+
+        // Tính doanh thu từ khóa học của student
+        if (student.courseId) {
+          const course = await courseRepo.findOne({ where: { id: student.courseId } });
+          if (course && course.price) {
+            revenue += Number(course.price);
+          }
         }
       }
     }
@@ -166,13 +195,13 @@ async function toEnrichedCampaign(c) {
     targetNewStudents: c.targetNewStudents || 0,
     targetRevenue: Number(c.targetRevenue) || 0,
     // Tính % hoàn thành mục tiêu
-    leadsProgress: c.targetLeads > 0 
+    leadsProgress: c.targetLeads > 0
       ? Math.min(100, ((c.potentialStudentsCount || metrics.potentialStudentsCount || 0) / c.targetLeads) * 100).toFixed(1)
       : null,
-    newStudentsProgress: c.targetNewStudents > 0 
+    newStudentsProgress: c.targetNewStudents > 0
       ? Math.min(100, ((c.newStudentsCount || metrics.newStudentsCount || 0) / c.targetNewStudents) * 100).toFixed(1)
       : null,
-    revenueProgress: c.targetRevenue > 0 
+    revenueProgress: c.targetRevenue > 0
       ? Math.min(100, (Number(c.revenue || metrics.revenue || 0) / Number(c.targetRevenue)) * 100).toFixed(1)
       : null,
     channels: channels // Include all campaign channels

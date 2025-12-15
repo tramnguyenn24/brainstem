@@ -21,7 +21,7 @@ const buildQueryString = (options = {}) => {
   const params = new URLSearchParams();
   params.append('page', page.toString());
   params.append('size', size.toString());
-  
+
   if (search) params.append('search', search);
   if (name) params.append('name', name);
   if (status) params.append('status', status);
@@ -56,8 +56,8 @@ export const campaignService = {
       if (options.endDate) params.append('endDate', options.endDate);
 
       const query = params.toString();
-      const url = query 
-        ? `${API_BASE_URL}/api/campaigns/summary?${query}` 
+      const url = query
+        ? `${API_BASE_URL}/api/campaigns/summary?${query}`
         : `${API_BASE_URL}/api/campaigns/summary`;
 
       const { data } = await apiRequest(url, {
@@ -112,7 +112,7 @@ export const campaignService = {
       const params = new URLSearchParams();
       if (limit) params.append('limit', limit.toString());
       if (status) params.append('status', status);
-      
+
       const { data } = await apiRequest(`${API_BASE_URL}/api/campaigns/featured?${params.toString()}`, {
         method: 'GET'
       });
@@ -136,6 +136,13 @@ export const campaignService = {
           spend: campaign.spend,
           cost: campaign.cost,
           revenue: campaign.revenue,
+          // Thời gian chiến dịch
+          startDate: campaign.startDate || null,
+          endDate: campaign.endDate || null,
+          // Mục tiêu chiến dịch
+          targetLeads: campaign.targetLeads || 0,
+          targetNewStudents: campaign.targetNewStudents || 0,
+          targetRevenue: campaign.targetRevenue || 0,
           channels: campaign.channels || []
         })
       });
