@@ -118,11 +118,20 @@ exports.getRevenue = async (req, res) => {
       const periodData = periodMap.get(periodKey);
       periodData.enrollments += 1;
 
-      // Calculate revenue from course price
-      if (student.courseId) {
-        const course = await courseRepo.findOne({ where: { id: student.courseId } });
-        if (course && course.price) {
-          periodData.revenue += Number(course.price) || 0;
+      // Chỉ tính revenue nếu student được convert từ Lead và Lead có lịch sử chiến dịch
+      if (student.sourceLeadId && student.courseId) {
+        // Tìm lịch sử chiến dịch của Lead nguồn
+        const leadHistories = await historyRepo.find({
+          where: { leadId: student.sourceLeadId },
+          order: { createdAt: 'DESC' }
+        });
+
+        // Chỉ tính doanh thu nếu Lead có tham gia ít nhất 1 chiến dịch
+        if (leadHistories.length > 0) {
+          const course = await courseRepo.findOne({ where: { id: student.courseId } });
+          if (course && course.price) {
+            periodData.revenue += Number(course.price) || 0;
+          }
         }
       }
     }
@@ -140,27 +149,31 @@ exports.getRevenue = async (req, res) => {
     }
 
     // Calculate top campaigns by revenue
-    // LƯU Ý: phải tôn trọng bộ lọc thời gian (startDate, endDate)
-    // nên chỉ dùng các student trong filteredStudents (đã được lọc theo createdAt)
+    // Doanh thu được tính dựa trên chiến dịch cuối cùng mà Lead tham gia
     const campaignRevenueMap = new Map();
 
     for (const campaign of campaigns) {
       let revenue = 0;
 
-      // Chỉ lấy học viên của campaign trong khoảng thời gian đã lọc
-      const campaignStudents = filteredStudents.filter(s => s.campaignId === campaign.id);
+      // Lấy tất cả students được convert từ Lead trong khoảng thời gian
+      const convertedStudents = filteredStudents.filter(s => s.sourceLeadId != null && s.courseId != null);
 
-      for (const student of campaignStudents) {
-        // Nếu student có courseId, lấy giá từ course
-        if (student.courseId) {
+      for (const student of convertedStudents) {
+        // Tìm lịch sử chiến dịch của Lead nguồn
+        const leadHistories = await historyRepo.find({
+          where: { leadId: student.sourceLeadId },
+          order: { createdAt: 'DESC' }
+        });
+
+        // Lấy chiến dịch cuối cùng mà Lead tham gia
+        const lastCampaignHistory = leadHistories.length > 0 ? leadHistories[0] : null;
+
+        // Nếu chiến dịch cuối cùng trùng với campaign hiện tại, tính doanh thu
+        if (lastCampaignHistory && lastCampaignHistory.campaignId === campaign.id) {
           const course = await courseRepo.findOne({ where: { id: student.courseId } });
           if (course && course.price) {
             revenue += Number(course.price) || 0;
           }
-        }
-        // Hoặc dùng tuitionFee nếu có
-        if (student.tuitionFee) {
-          revenue += Number(student.tuitionFee) || 0;
         }
       }
 
@@ -349,9 +362,9 @@ exports.getDashboardStats = async (req, res) => {
       return createdAt >= prevMonthStart && createdAt <= prevMonthEnd;
     });
 
-    // Calculate total revenue from converted students (students with sourceLeadId and courseId)
-    // Chỉ tính doanh thu từ học viên được chuyển đổi từ leads và đã đăng ký khóa học
-    // Doanh thu được tính theo giá khóa học mà học viên đã đăng ký (course.price)
+    // Calculate total revenue from converted students
+    // Doanh thu được tính dựa trên chiến dịch cuối cùng mà Lead tham gia
+    // Chỉ tính khi student được convert từ Lead và có courseId
     let currentRevenue = 0;
     const convertedStudents = currentStudents.filter(s => s.sourceLeadId != null && s.courseId != null);
 
@@ -368,8 +381,19 @@ exports.getDashboardStats = async (req, res) => {
     }
     const courseMap = new Map(courses.map(c => [c.id, c]));
 
+    // Tính doanh thu dựa trên chiến dịch cuối cùng mà Lead tham gia
     for (const student of convertedStudents) {
-      if (student.courseId) {
+      // Tìm lịch sử chiến dịch của Lead nguồn, sắp xếp theo thời gian mới nhất
+      const leadHistories = await historyRepo.find({
+        where: { leadId: student.sourceLeadId },
+        order: { createdAt: 'DESC' }
+      });
+
+      // Lấy chiến dịch cuối cùng mà Lead tham gia
+      const lastCampaignHistory = leadHistories.length > 0 ? leadHistories[0] : null;
+
+      // Nếu Lead có tham gia ít nhất 1 chiến dịch, tính doanh thu từ khóa học
+      if (lastCampaignHistory && student.courseId) {
         const course = courseMap.get(student.courseId);
         if (course && course.price != null) {
           currentRevenue += Number(course.price);
@@ -394,8 +418,19 @@ exports.getDashboardStats = async (req, res) => {
     }
     const prevCourseMap = new Map(prevCourses.map(c => [c.id, c]));
 
+    // Tính doanh thu tháng trước dựa trên chiến dịch cuối cùng mà Lead tham gia
     for (const student of prevConvertedStudents) {
-      if (student.courseId) {
+      // Tìm lịch sử chiến dịch của Lead nguồn, sắp xếp theo thời gian mới nhất
+      const leadHistories = await historyRepo.find({
+        where: { leadId: student.sourceLeadId },
+        order: { createdAt: 'DESC' }
+      });
+
+      // Lấy chiến dịch cuối cùng mà Lead tham gia
+      const lastCampaignHistory = leadHistories.length > 0 ? leadHistories[0] : null;
+
+      // Nếu Lead có tham gia ít nhất 1 chiến dịch, tính doanh thu từ khóa học
+      if (lastCampaignHistory && student.courseId) {
         const course = prevCourseMap.get(student.courseId);
         if (course && course.price != null) {
           prevRevenue += Number(course.price);
@@ -510,15 +545,15 @@ exports.getDashboardStats = async (req, res) => {
     // Get new students by month - sử dụng khoảng thời gian từ tham số
     const newStudentsByMonth = [];
     const months = [];
-    
+
     // Tính toán các tháng cần hiển thị dựa trên startDate và endDate
     const filterStart = new Date(start);
     const filterEnd = new Date(end);
-    
+
     // Tính số tháng giữa start và end
     const startMonth = new Date(filterStart.getFullYear(), filterStart.getMonth(), 1);
     const endMonth = new Date(filterEnd.getFullYear(), filterEnd.getMonth(), 1);
-    
+
     // Tạo danh sách các tháng trong khoảng
     let currentMonth = new Date(startMonth);
     while (currentMonth <= endMonth) {
@@ -582,7 +617,7 @@ exports.getDashboardStats = async (req, res) => {
       const dateToUse = c.startDate ? new Date(c.startDate) : new Date(c.createdAt);
       return dateToUse >= start && dateToUse <= end;
     });
-    
+
     const roiByCampaign = await Promise.all(
       filteredCampaigns.map(async (c) => {
         const enriched = await toEnrichedCampaign(c);
@@ -687,27 +722,46 @@ async function calculateCampaignMetrics(campaignId) {
   const historyRepo = AppDataSource.getRepository('LeadCampaignHistory');
   const courseRepo = AppDataSource.getRepository('Course');
 
-  const [students, histories] = await Promise.all([
-    studentRepo.find({ where: { campaignId } }),
-    historyRepo.find({ where: { campaignId } })
-  ]);
+  // Đếm số HVTN từ bảng history (số lần tham gia chiến dịch này)
+  const campaignHistories = await historyRepo.find({ where: { campaignId } });
+  const potentialStudentsCount = campaignHistories.length;
 
-  const newStudents = students.filter(s => s.newStudent === true);
+  // Lấy tất cả students được convert từ Lead (có sourceLeadId)
+  const allStudents = await studentRepo.find();
+  const convertedStudents = allStudents.filter(s => s.sourceLeadId != null);
 
-  // Calculate revenue from course prices
+  // Đếm số HV mới: những student được convert và chiến dịch cuối cùng của Lead là chiến dịch này
+  let newStudentsCount = 0;
   let revenue = 0;
-  for (const student of students) {
-    if (student.courseId) {
-      const course = await courseRepo.findOne({ where: { id: student.courseId } });
-      if (course && course.price) {
-        revenue += Number(course.price);
+
+  for (const student of convertedStudents) {
+    // Tìm lịch sử chiến dịch của Lead nguồn, sắp xếp theo thời gian mới nhất
+    const leadHistories = await historyRepo.find({
+      where: { leadId: student.sourceLeadId },
+      order: { createdAt: 'DESC' }
+    });
+
+    // Lấy chiến dịch cuối cùng mà Lead tham gia
+    const lastCampaignHistory = leadHistories.length > 0 ? leadHistories[0] : null;
+
+    // Nếu chiến dịch cuối cùng của Lead trùng với chiến dịch đang xem
+    if (lastCampaignHistory && lastCampaignHistory.campaignId === campaignId) {
+      // Đếm là học viên mới của chiến dịch này
+      newStudentsCount++;
+
+      // Tính doanh thu từ khóa học của student
+      if (student.courseId) {
+        const course = await courseRepo.findOne({ where: { id: student.courseId } });
+        if (course && course.price) {
+          revenue += Number(course.price);
+        }
       }
     }
   }
 
   return {
-    newStudentsCount: newStudents.length,
-    potentialStudentsCount: histories.length, // Đếm từ history thay vì leads
+    newStudentsCount,
+    potentialStudentsCount,
     revenue
   };
 }
