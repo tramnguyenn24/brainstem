@@ -49,13 +49,13 @@ const AddCampaignPage = () => {
           channelService.getChannels({ page: 1, size: 100 }),
           staffService.getStaffMembers({ page: 1, size: 100 })
         ]);
-        
+
         if (channelsResponse && channelsResponse.items) {
           setChannels(channelsResponse.items);
         } else if (Array.isArray(channelsResponse)) {
           setChannels(channelsResponse);
         }
-        
+
         if (staffResponse && staffResponse.items) {
           setStaff(staffResponse.items);
         } else if (Array.isArray(staffResponse)) {
@@ -159,7 +159,7 @@ const AddCampaignPage = () => {
     const updated = [...campaignChannels];
     updated[index] = { ...updated[index], [field]: value };
     setCampaignChannels(updated);
-    
+
     // Tính lại tổng chi phí
     const totalCost = updated.reduce((sum, ch) => sum + (Number(ch.cost) || 0), 0);
     setFormData({ ...formData, cost: totalCost });
@@ -167,7 +167,7 @@ const AddCampaignPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Validate form before submission
     if (!validateForm()) {
       toast.error('Vui lòng sửa các lỗi trước khi gửi');
@@ -175,10 +175,10 @@ const AddCampaignPage = () => {
     }
 
     setIsSubmitting(true);
-    
+
     try {
       toast.loading("Đang thêm chiến dịch...", { id: "add-campaign" });
-      
+
       // Chuẩn bị dữ liệu kênh truyền thông
       const channelsData = campaignChannels
         .filter(ch => ch.channelId)
@@ -186,7 +186,7 @@ const AddCampaignPage = () => {
           channelId: Number(ch.channelId),
           cost: Number(ch.cost) || 0
         }));
-      
+
       const result = await campaignService.addCampaign({
         name: formData.name,
         status: formData.status,
@@ -204,7 +204,7 @@ const AddCampaignPage = () => {
         targetRevenue: formData.targetRevenue ? Number(formData.targetRevenue) : 0,
         channels: channelsData
       });
-      
+
       // Check if API response contains error
       if (result && (result.code >= 400 || result.error || result.status >= 400)) {
         const errorMessage = getErrorMessage(result, 'Không thể thêm chiến dịch. Vui lòng thử lại.');
@@ -215,7 +215,7 @@ const AddCampaignPage = () => {
         });
         return;
       }
-      
+
       // Success case
       toast.success("Đã thêm chiến dịch thành công!", {
         id: "add-campaign",
@@ -225,7 +225,7 @@ const AddCampaignPage = () => {
       router.push('/chiendich');
     } catch (error) {
       console.error('Error adding campaign:', error);
-      
+
       const errorMessage = getErrorMessage(error, 'Không thể thêm chiến dịch. Vui lòng thử lại.');
       toast.error(errorMessage, {
         id: "add-campaign",
@@ -364,16 +364,16 @@ const AddCampaignPage = () => {
         </div>
 
         {/* Mục tiêu chiến dịch */}
-        <div style={{ 
-          marginTop: '20px', 
-          paddingTop: '20px', 
+        <div style={{
+          marginTop: '20px',
+          paddingTop: '20px',
           borderTop: '1px solid var(--border)',
           marginBottom: '20px'
         }}>
           <h3 style={{ marginBottom: '15px', fontSize: '16px', fontWeight: 600, color: 'var(--text)' }}>
             🎯 Mục tiêu chiến dịch
           </h3>
-          
+
           <div className={styles.formGroup}>
             <label>Mục tiêu số Lead (HVTN):</label>
             <input
@@ -434,7 +434,7 @@ const AddCampaignPage = () => {
               + Thêm kênh
             </button>
           </div>
-          
+
           {campaignChannels.map((channel, index) => (
             <div key={index} style={{ display: 'flex', gap: '10px', marginBottom: '10px', alignItems: 'center' }}>
               <select
@@ -471,7 +471,7 @@ const AddCampaignPage = () => {
               </button>
             </div>
           ))}
-          
+
           {campaignChannels.length === 0 && (
             <small style={{ color: '#666', fontSize: '12px' }}>
               Chưa có kênh nào. Nhấn "Thêm kênh" để thêm kênh truyền thông cho chiến dịch này.
@@ -480,15 +480,15 @@ const AddCampaignPage = () => {
         </div>
 
         <div className={styles.buttonGroup}>
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             className={styles.submitButton}
             disabled={isSubmitting}
           >
             {isSubmitting ? 'Đang thêm...' : 'Thêm chiến dịch'}
           </button>
-          <button 
-            type="button" 
+          <button
+            type="button"
             className={styles.cancelButton}
             onClick={() => router.push('/chiendich')}
             disabled={isSubmitting}

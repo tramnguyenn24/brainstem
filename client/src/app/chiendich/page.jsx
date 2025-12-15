@@ -548,7 +548,7 @@ const Page = () => {
         'Trạng thái': getStatusText(item.status),
         'Người phụ trách': item.ownerStaffName || '',
         'Ngân sách': item.budget || 0,
-        'Đã chi': item.cost || 0,
+        'Tổng chi': item.cost || 0,
         'Doanh thu': item.revenue || 0,
         'Học viên tiềm năng': item.potentialStudentsCount || 0,
         'Học viên mới': item.newStudentsCount || 0,
@@ -650,7 +650,7 @@ const Page = () => {
             <div className={Style.summaryCardValue}>{formatNumber(summary.completed || 0)}</div>
           </div>
           <div className={Style.summaryCard}>
-            <div className={Style.summaryCardLabel}>Đã chi</div>
+            <div className={Style.summaryCardLabel}>Tổng chi</div>
             <div className={Style.summaryCardValue}>{formatCurrency(summary.totalSpent || 0)}</div>
           </div>
           <div className={Style.summaryCard}>
@@ -749,7 +749,7 @@ const Page = () => {
             <td>Người phụ trách</td>
             <td>
               <div className={Style.sortableHeader}>
-                Đã chi
+                Tổng chi
                 <button
                   className={`${Style.sortButton} ${sortBy === 'cost' ? Style.active : ''}`}
                   onClick={() => handleSort('cost')}
@@ -842,24 +842,24 @@ const Page = () => {
                   {campaign.targetLeads > 0 && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <span style={{ minWidth: '50px', color: '#8391a2' }}>Lead:</span>
-                      <div style={{ 
-                        flex: 1, 
-                        height: '8px', 
-                        background: '#2d3748', 
-                        borderRadius: '4px', 
+                      <div style={{
+                        flex: 1,
+                        height: '8px',
+                        background: '#2d3748',
+                        borderRadius: '4px',
                         overflow: 'hidden',
                         minWidth: '60px'
                       }}>
-                        <div style={{ 
-                          width: `${Math.min(100, campaign.leadsProgress || 0)}%`, 
-                          height: '100%', 
+                        <div style={{
+                          width: `${Math.min(100, campaign.leadsProgress || 0)}%`,
+                          height: '100%',
                           background: campaign.leadsProgress >= 100 ? '#10b981' : '#3b82f6',
                           borderRadius: '4px',
                           transition: 'width 0.3s ease'
                         }}></div>
                       </div>
-                      <span style={{ 
-                        minWidth: '45px', 
+                      <span style={{
+                        minWidth: '45px',
                         textAlign: 'right',
                         color: campaign.leadsProgress >= 100 ? '#10b981' : '#fff',
                         fontWeight: campaign.leadsProgress >= 100 ? 600 : 400
@@ -871,24 +871,24 @@ const Page = () => {
                   {campaign.targetNewStudents > 0 && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <span style={{ minWidth: '50px', color: '#8391a2' }}>HV mới:</span>
-                      <div style={{ 
-                        flex: 1, 
-                        height: '8px', 
-                        background: '#2d3748', 
-                        borderRadius: '4px', 
+                      <div style={{
+                        flex: 1,
+                        height: '8px',
+                        background: '#2d3748',
+                        borderRadius: '4px',
                         overflow: 'hidden',
                         minWidth: '60px'
                       }}>
-                        <div style={{ 
-                          width: `${Math.min(100, campaign.newStudentsProgress || 0)}%`, 
-                          height: '100%', 
+                        <div style={{
+                          width: `${Math.min(100, campaign.newStudentsProgress || 0)}%`,
+                          height: '100%',
                           background: campaign.newStudentsProgress >= 100 ? '#10b981' : '#8b5cf6',
                           borderRadius: '4px',
                           transition: 'width 0.3s ease'
                         }}></div>
                       </div>
-                      <span style={{ 
-                        minWidth: '45px', 
+                      <span style={{
+                        minWidth: '45px',
                         textAlign: 'right',
                         color: campaign.newStudentsProgress >= 100 ? '#10b981' : '#fff',
                         fontWeight: campaign.newStudentsProgress >= 100 ? 600 : 400
@@ -900,24 +900,24 @@ const Page = () => {
                   {campaign.targetRevenue > 0 && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <span style={{ minWidth: '50px', color: '#8391a2' }}>DT:</span>
-                      <div style={{ 
-                        flex: 1, 
-                        height: '8px', 
-                        background: '#2d3748', 
-                        borderRadius: '4px', 
+                      <div style={{
+                        flex: 1,
+                        height: '8px',
+                        background: '#2d3748',
+                        borderRadius: '4px',
                         overflow: 'hidden',
                         minWidth: '60px'
                       }}>
-                        <div style={{ 
-                          width: `${Math.min(100, campaign.revenueProgress || 0)}%`, 
-                          height: '100%', 
+                        <div style={{
+                          width: `${Math.min(100, campaign.revenueProgress || 0)}%`,
+                          height: '100%',
                           background: campaign.revenueProgress >= 100 ? '#10b981' : '#f59e0b',
                           borderRadius: '4px',
                           transition: 'width 0.3s ease'
                         }}></div>
                       </div>
-                      <span style={{ 
-                        minWidth: '45px', 
+                      <span style={{
+                        minWidth: '45px',
                         textAlign: 'right',
                         color: campaign.revenueProgress >= 100 ? '#10b981' : '#fff',
                         fontWeight: campaign.revenueProgress >= 100 ? 600 : 400
@@ -1018,7 +1018,7 @@ const Page = () => {
                 />
               </div>
               <div className={Style.formGroup}>
-                <label>Đã chi (VNĐ):</label>
+                <label>Tổng chi (VNĐ):</label>
                 <input
                   type="number"
                   value={editForm.spend}
@@ -1038,16 +1038,16 @@ const Page = () => {
               </div>
 
               {/* Thời gian chiến dịch */}
-              <div style={{ 
-                marginTop: '20px', 
-                paddingTop: '20px', 
+              <div style={{
+                marginTop: '20px',
+                paddingTop: '20px',
                 borderTop: '1px solid var(--border)',
                 marginBottom: '20px'
               }}>
                 <h3 style={{ marginBottom: '15px', fontSize: '16px', fontWeight: 600 }}>
                   📅 Thời gian chiến dịch
                 </h3>
-                
+
                 <div className={Style.formGroup}>
                   <label>Ngày bắt đầu:</label>
                   <input
@@ -1070,16 +1070,16 @@ const Page = () => {
               </div>
 
               {/* Mục tiêu chiến dịch */}
-              <div style={{ 
-                marginTop: '20px', 
-                paddingTop: '20px', 
+              <div style={{
+                marginTop: '20px',
+                paddingTop: '20px',
                 borderTop: '1px solid var(--border)',
                 marginBottom: '20px'
               }}>
                 <h3 style={{ marginBottom: '15px', fontSize: '16px', fontWeight: 600 }}>
                   🎯 Mục tiêu chiến dịch
                 </h3>
-                
+
                 <div className={Style.formGroup}>
                   <label>Mục tiêu số Lead (HVTN):</label>
                   <input
@@ -1307,28 +1307,28 @@ const Page = () => {
               {(selectedCampaign?.targetLeads > 0 || selectedCampaign?.targetNewStudents > 0 || selectedCampaign?.targetRevenue > 0) && (
                 <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid var(--border)' }}>
                   <h3 style={{ marginBottom: '15px', fontSize: '18px', fontWeight: 600 }}>🎯 Mục tiêu chiến dịch:</h3>
-                  
+
                   {selectedCampaign?.targetLeads > 0 && (
                     <div className={Style.detailItem} style={{ marginBottom: '15px' }}>
                       <label>Mục tiêu Lead (HVTN):</label>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
                         <span>{formatNumber(selectedCampaign.potentialStudentsCount || 0)} / {formatNumber(selectedCampaign.targetLeads)}</span>
-                        <div style={{ 
-                          flex: 1, 
-                          height: '10px', 
-                          background: '#2d3748', 
-                          borderRadius: '5px', 
+                        <div style={{
+                          flex: 1,
+                          height: '10px',
+                          background: '#2d3748',
+                          borderRadius: '5px',
                           overflow: 'hidden',
                           maxWidth: '200px'
                         }}>
-                          <div style={{ 
-                            width: `${Math.min(100, selectedCampaign.leadsProgress || 0)}%`, 
-                            height: '100%', 
+                          <div style={{
+                            width: `${Math.min(100, selectedCampaign.leadsProgress || 0)}%`,
+                            height: '100%',
                             background: selectedCampaign.leadsProgress >= 100 ? '#10b981' : '#3b82f6',
                             borderRadius: '5px'
                           }}></div>
                         </div>
-                        <span style={{ 
+                        <span style={{
                           fontWeight: 600,
                           color: selectedCampaign.leadsProgress >= 100 ? '#10b981' : '#fff'
                         }}>
@@ -1337,28 +1337,28 @@ const Page = () => {
                       </div>
                     </div>
                   )}
-                  
+
                   {selectedCampaign?.targetNewStudents > 0 && (
                     <div className={Style.detailItem} style={{ marginBottom: '15px' }}>
                       <label>Mục tiêu HV mới:</label>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
                         <span>{formatNumber(selectedCampaign.newStudentsCount || 0)} / {formatNumber(selectedCampaign.targetNewStudents)}</span>
-                        <div style={{ 
-                          flex: 1, 
-                          height: '10px', 
-                          background: '#2d3748', 
-                          borderRadius: '5px', 
+                        <div style={{
+                          flex: 1,
+                          height: '10px',
+                          background: '#2d3748',
+                          borderRadius: '5px',
                           overflow: 'hidden',
                           maxWidth: '200px'
                         }}>
-                          <div style={{ 
-                            width: `${Math.min(100, selectedCampaign.newStudentsProgress || 0)}%`, 
-                            height: '100%', 
+                          <div style={{
+                            width: `${Math.min(100, selectedCampaign.newStudentsProgress || 0)}%`,
+                            height: '100%',
                             background: selectedCampaign.newStudentsProgress >= 100 ? '#10b981' : '#8b5cf6',
                             borderRadius: '5px'
                           }}></div>
                         </div>
-                        <span style={{ 
+                        <span style={{
                           fontWeight: 600,
                           color: selectedCampaign.newStudentsProgress >= 100 ? '#10b981' : '#fff'
                         }}>
@@ -1367,28 +1367,28 @@ const Page = () => {
                       </div>
                     </div>
                   )}
-                  
+
                   {selectedCampaign?.targetRevenue > 0 && (
                     <div className={Style.detailItem} style={{ marginBottom: '15px' }}>
                       <label>Mục tiêu doanh thu:</label>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
                         <span>{formatCurrency(selectedCampaign.revenue || 0)} / {formatCurrency(selectedCampaign.targetRevenue)}</span>
-                        <div style={{ 
-                          flex: 1, 
-                          height: '10px', 
-                          background: '#2d3748', 
-                          borderRadius: '5px', 
+                        <div style={{
+                          flex: 1,
+                          height: '10px',
+                          background: '#2d3748',
+                          borderRadius: '5px',
                           overflow: 'hidden',
                           maxWidth: '200px'
                         }}>
-                          <div style={{ 
-                            width: `${Math.min(100, selectedCampaign.revenueProgress || 0)}%`, 
-                            height: '100%', 
+                          <div style={{
+                            width: `${Math.min(100, selectedCampaign.revenueProgress || 0)}%`,
+                            height: '100%',
                             background: selectedCampaign.revenueProgress >= 100 ? '#10b981' : '#f59e0b',
                             borderRadius: '5px'
                           }}></div>
                         </div>
-                        <span style={{ 
+                        <span style={{
                           fontWeight: 600,
                           color: selectedCampaign.revenueProgress >= 100 ? '#10b981' : '#fff'
                         }}>
