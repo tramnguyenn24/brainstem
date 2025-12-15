@@ -294,3 +294,84 @@
   margin-bottom: 20px;
 }
 
+/* Time Filter */
+.timeFilter {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  margin-bottom: 20px;
+  padding: 16px;
+  background-color: var(--bgSoft);
+  border-radius: 8px;
+}
+
+.dateGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dateGroup label {
+  font-size: 14px;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.dateInput {
+  padding: 8px 12px;
+  border: 1px solid var(--bgSoft);
+  border-radius: 6px;
+  background-color: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+}
+
+.dateInput:focus {
+  outline: none;
+  border-color: #5d57c9;
+}
+
+.filterButton {
+  padding: 10px 20px;
+  background-color: #5d57c9;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+  white-space: nowrap;
+}
+
+.filterButton:hover {
+  background-color: #4a45a8;
+}
+
+.clearFilterButton {
+  padding: 10px 20px;
+  background-color: transparent;
+  color: var(--text);
+  border: 1px solid var(--bgSoft);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.clearFilterButton:hover {
+  background-color: var(--bgSoft);
+  border-color: #5d57c9;
+}
+
+.dateFilterInfo {
+  padding: 12px;
+  background-color: rgba(93, 87, 201, 0.1);
+  border-radius: 8px;
+  margin-bottom: 16px;
+  color: var(--text);
+  font-size: 14px;
+  border-left: 3px solid #5d57c9;
+}

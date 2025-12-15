@@ -37,23 +37,29 @@ const Page = () => {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [showCampaignsModal, setShowCampaignsModal] = useState(false);
   const [selectedChannelCampaigns, setSelectedChannelCampaigns] = useState([]);
-  
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const { replace } = useRouter();
-  
+
   const currentPage = parseInt(searchParams.get("page") || "1");
   const searchFilter = searchParams.get("search") || "";
   const statusFilter = searchParams.get("status") || "";
+  const startDateFilter = searchParams.get("startDate") || "";
+  const endDateFilter = searchParams.get("endDate") || "";
 
   useEffect(() => {
     setSearchTerm(searchFilter);
     setSelectedStatus(statusFilter);
-  }, [searchFilter, statusFilter]);
+    setStartDate(startDateFilter);
+    setEndDate(endDateFilter);
+  }, [searchFilter, statusFilter, startDateFilter, endDateFilter]);
 
   useEffect(() => {
-    fetchChannels(currentPage, itemsPerPage, searchFilter, statusFilter);
-  }, [currentPage, itemsPerPage, searchFilter, statusFilter]);
+    fetchChannels(currentPage, itemsPerPage, searchFilter, statusFilter, startDateFilter, endDateFilter);
+  }, [currentPage, itemsPerPage, searchFilter, statusFilter, startDateFilter, endDateFilter]);
 
   useEffect(() => {
     const timerId = setTimeout(() => {
@@ -77,18 +83,20 @@ const Page = () => {
     replace(`${pathname}?${params}`);
   };
 
-  const fetchChannels = async (page, size, search = "", status = "") => {
+  const fetchChannels = async (page, size, search = "", status = "", startDateParam = "", endDateParam = "") => {
     try {
       setLoading(true);
-      const response = await channelService.getChannelsWithStats({ 
-        page, 
-        size, 
-        search, 
+      const response = await channelService.getChannelsWithStats({
+        page,
+        size,
+        search,
         status,
+        startDate: startDateParam || undefined,
+        endDate: endDateParam || undefined,
         sortBy: 'name',
         sortDirection: 'asc'
       });
-      
+
       if (response && response.items) {
         setChannels(response.items);
         setMetadata({
@@ -120,6 +128,33 @@ const Page = () => {
     updateFilters({ status });
   };
 
+  const handleDateFilterChange = () => {
+    // Validate date range
+    if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+      toast.error('Ngày bắt đầu không được lớn hơn ngày kết thúc!', {
+        duration: 3000,
+        position: 'top-center'
+      });
+      return;
+    }
+
+    updateFilters({
+      startDate: startDate || undefined,
+      endDate: endDate || undefined
+    });
+  };
+
+  const handleClearDateFilter = () => {
+    setStartDate("");
+    setEndDate("");
+    updateFilters({ startDate: undefined, endDate: undefined });
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('vi-VN');
+  };
+
   const handleAdd = () => {
     setAddForm({ name: '', type: '', status: 'active' });
     setShowAddModal(true);
@@ -131,17 +166,17 @@ const Page = () => {
       toast.error("Tên kênh không được để trống!");
       return;
     }
-    
+
     try {
       toast.loading("Đang thêm kênh...", { id: "add-channel" });
       const response = await channelService.addChannel(addForm);
-      
+
       if (response && (response.code >= 400 || response.error || response.status >= 400)) {
         const errorMessage = getErrorMessage(response, "Không thể thêm kênh");
         toast.error(errorMessage, { id: "add-channel", duration: 4000, position: "top-center" });
         return;
       }
-      
+
       toast.success("Đã thêm kênh thành công!", { id: "add-channel", duration: 3000, position: "top-center" });
       setShowAddModal(false);
       fetchChannels(currentPage, itemsPerPage, searchFilter, statusFilter);
@@ -168,17 +203,17 @@ const Page = () => {
       toast.error("Tên kênh không được để trống!");
       return;
     }
-    
+
     try {
       toast.loading("Đang cập nhật kênh...", { id: "edit-channel" });
       const response = await channelService.updateChannel(selectedChannel.id, editForm);
-      
+
       if (response && (response.code >= 400 || response.error || response.status >= 400)) {
         const errorMessage = getErrorMessage(response, "Không thể cập nhật kênh");
         toast.error(errorMessage, { id: "edit-channel", duration: 4000, position: "top-center" });
         return;
       }
-      
+
       toast.success(`Đã cập nhật kênh "${editForm.name}" thành công!`, {
         id: "edit-channel",
         duration: 3000,
@@ -202,13 +237,13 @@ const Page = () => {
     try {
       toast.loading("Đang xóa kênh...", { id: "delete-channel" });
       const response = await channelService.deleteChannel(selectedChannel.id);
-      
+
       if (response && (response.code >= 400 || response.error || response.status >= 400)) {
         const errorMessage = getErrorMessage(response, "Không thể xóa kênh");
         toast.error(errorMessage, { id: "delete-channel", duration: 4000, position: "top-center" });
         return;
       }
-      
+
       toast.success(`Đã xóa kênh "${selectedChannel.name}" thành công!`, {
         id: "delete-channel",
         duration: 3000,
@@ -259,10 +294,10 @@ const Page = () => {
         <h1>Quản lý Kênh Truyền thông</h1>
         <div className={Style.topRight}>
           <Suspense fallback={<div>Loading...</div>}>
-            <FilterableSearch 
+            <FilterableSearch
               placeholder="Tìm kiếm theo tên kênh..."
-              onChange={handleSearch} 
-              onSearch={handleSearch} 
+              onChange={handleSearch}
+              onSearch={handleSearch}
               value={searchTerm}
               statusFilter={selectedStatus}
               onStatusChange={handleStatusChange}
@@ -278,10 +313,56 @@ const Page = () => {
           </button>
         </div>
       </div>
-    
+
+      {/* Time Filter */}
+      <div className={Style.timeFilter}>
+        <div className={Style.dateGroup}>
+          <label>Từ ngày:</label>
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className={Style.dateInput}
+          />
+        </div>
+        <div className={Style.dateGroup}>
+          <label>Đến ngày:</label>
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className={Style.dateInput}
+          />
+        </div>
+        <button
+          className={Style.filterButton}
+          onClick={handleDateFilterChange}
+        >
+          Áp dụng
+        </button>
+        {(startDate || endDate) && (
+          <button
+            className={Style.clearFilterButton}
+            onClick={handleClearDateFilter}
+          >
+            Xóa bộ lọc
+          </button>
+        )}
+      </div>
+
+      {/* Date filter info */}
+      {(startDateFilter || endDateFilter) && (
+        <div className={Style.dateFilterInfo}>
+          📅 Đang lọc chiến dịch có thời gian chạy trong khoảng:
+          <strong>{startDateFilter ? formatDate(startDateFilter) : 'Không giới hạn'}</strong>
+          {' → '}
+          <strong>{endDateFilter ? formatDate(endDateFilter) : 'Không giới hạn'}</strong>
+        </div>
+      )}
+
       {searchFilter && (
         <div className={Style.searchInfo}>
-          Kết quả tìm kiếm cho: <strong>{searchFilter}</strong> | 
+          Kết quả tìm kiếm cho: <strong>{searchFilter}</strong> |
           Tìm thấy: <strong>{channels.length}</strong> kênh
         </div>
       )}
@@ -322,7 +403,7 @@ const Page = () => {
                 </td>
                 <td>
                   {channel.runningCampaignsCount > 0 ? (
-                    <span 
+                    <span
                       className={Style.runningCampaignsLink}
                       onClick={() => handleRunningCampaignsClick(channel)}
                       style={{ cursor: 'pointer', color: '#4ecdc4', textDecoration: 'underline' }}
@@ -346,13 +427,13 @@ const Page = () => {
                 </td>
                 <td>
                   <div className={Style.buttons}>
-                    <button 
+                    <button
                       className={`${Style.button} ${Style.edit}`}
                       onClick={() => handleEdit(channel)}
                     >
                       Sửa
                     </button>
-                    <button 
+                    <button
                       className={`${Style.button} ${Style.delete}`}
                       onClick={() => handleDelete(channel)}
                     >
@@ -381,7 +462,7 @@ const Page = () => {
                 <input
                   type="text"
                   value={addForm.name}
-                  onChange={(e) => setAddForm({...addForm, name: e.target.value})}
+                  onChange={(e) => setAddForm({ ...addForm, name: e.target.value })}
                   placeholder="Nhập tên kênh"
                   required
                 />
@@ -391,7 +472,7 @@ const Page = () => {
                 <input
                   type="text"
                   value={addForm.type}
-                  onChange={(e) => setAddForm({...addForm, type: e.target.value})}
+                  onChange={(e) => setAddForm({ ...addForm, type: e.target.value })}
                   placeholder="Nhập loại kênh (tùy chọn)"
                 />
               </div>
@@ -399,7 +480,7 @@ const Page = () => {
                 <label>Trạng thái:</label>
                 <select
                   value={addForm.status}
-                  onChange={(e) => setAddForm({...addForm, status: e.target.value})}
+                  onChange={(e) => setAddForm({ ...addForm, status: e.target.value })}
                 >
                   <option value="active">Hoạt động</option>
                   <option value="inactive">Không hoạt động</option>
@@ -409,8 +490,8 @@ const Page = () => {
                 <button type="submit" className={Style.submitButton}>
                   Thêm kênh
                 </button>
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className={Style.cancelButton}
                   onClick={() => setShowAddModal(false)}
                 >
@@ -433,7 +514,7 @@ const Page = () => {
                 <input
                   type="text"
                   value={editForm.name}
-                  onChange={(e) => setEditForm({...editForm, name: e.target.value})}
+                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
                   required
                 />
               </div>
@@ -442,14 +523,14 @@ const Page = () => {
                 <input
                   type="text"
                   value={editForm.type}
-                  onChange={(e) => setEditForm({...editForm, type: e.target.value})}
+                  onChange={(e) => setEditForm({ ...editForm, type: e.target.value })}
                 />
               </div>
               <div className={Style.formGroup}>
                 <label>Trạng thái:</label>
                 <select
                   value={editForm.status}
-                  onChange={(e) => setEditForm({...editForm, status: e.target.value})}
+                  onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
                 >
                   <option value="active">Hoạt động</option>
                   <option value="inactive">Không hoạt động</option>
@@ -459,8 +540,8 @@ const Page = () => {
                 <button type="submit" className={Style.submitButton}>
                   Cập nhật
                 </button>
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className={Style.cancelButton}
                   onClick={() => setShowEditModal(false)}
                 >
@@ -479,13 +560,13 @@ const Page = () => {
             <h2>Xóa kênh</h2>
             <p>Bạn có chắc chắn muốn xóa kênh "{selectedChannel?.name}"?</p>
             <div className={Style.modalButtons}>
-              <button 
+              <button
                 className={Style.deleteButton}
                 onClick={handleDeleteConfirm}
               >
                 Xóa
               </button>
-              <button 
+              <button
                 className={Style.cancelButton}
                 onClick={() => setShowDeleteModal(false)}
               >
@@ -512,6 +593,8 @@ const Page = () => {
                     <tr>
                       <td>ID</td>
                       <td>Tên chiến dịch</td>
+                      <td>Ngày bắt đầu</td>
+                      <td>Ngày kết thúc</td>
                       <td>Trạng thái</td>
                     </tr>
                   </thead>
@@ -522,6 +605,8 @@ const Page = () => {
                         <td>
                           <strong>{campaign.name}</strong>
                         </td>
+                        <td>{formatDate(campaign.startDate)}</td>
+                        <td>{formatDate(campaign.endDate)}</td>
                         <td>
                           <span className={`${Style.status} ${Style.available}`}>
                             Đang chạy
@@ -534,7 +619,7 @@ const Page = () => {
               )}
             </div>
             <div className={Style.modalButtons}>
-              <button 
+              <button
                 className={Style.cancelButton}
                 onClick={() => setShowCampaignsModal(false)}
               >

@@ -138,27 +138,34 @@ async function toEnrichedCampaign(c) {
   // Tính toán metrics
   const metrics = await calculateCampaignMetrics(c.id);
 
-  // Tính tổng chi phí từ campaign_channels
+  // Tính tổng chi phí từ campaign_channels (chi phí các kênh truyền thông)
   const campaignChannelRepo = AppDataSource.getRepository('CampaignChannel');
   const campaignChannels = await campaignChannelRepo.find({ where: { campaignId: c.id } });
-  const totalCost = campaignChannels.reduce((sum, cc) => sum + (Number(cc.cost) || 0), 0);
+  const channelCost = campaignChannels.reduce((sum, cc) => sum + (Number(cc.cost) || 0), 0);
 
-  // Tính ROI tự động
+  // Chi phí ngoài kênh truyền thông
+  const spend = Number(c.spend) || 0;
+
+  // Tổng đã chi = chi phí ngoài kênh + chi phí kênh truyền thông
+  const totalSpent = spend + channelCost;
+
+  // Tính ROI tự động (dựa trên tổng đã chi)
   const revenue = c.revenue || metrics.revenue || 0;
-  const cost = c.cost || totalCost || 0;
+  const cost = totalSpent || c.cost || 0;
   const roi = calculateROI(revenue, cost);
 
   // Cập nhật campaign với metrics và ROI
   if (metrics.potentialStudentsCount !== c.potentialStudentsCount ||
     metrics.newStudentsCount !== c.newStudentsCount ||
     metrics.revenue !== c.revenue ||
-    roi !== c.roi) {
+    roi !== c.roi ||
+    c.cost !== totalSpent) {
     const repo = AppDataSource.getRepository('Campaign');
     await repo.update(c.id, {
       potentialStudentsCount: metrics.potentialStudentsCount,
       newStudentsCount: metrics.newStudentsCount,
       revenue: metrics.revenue,
-      cost: cost,
+      cost: totalSpent, // Lưu tổng đã chi vào cost
       roi: roi,
       updatedAt: new Date()
     });
@@ -186,7 +193,10 @@ async function toEnrichedCampaign(c) {
     channelName: channel ? channel.name : null,
     ownerStaffName: owner ? owner.name : null,
     revenue: Number(c.revenue || metrics.revenue || 0),
-    cost: Number(c.cost || cost || 0),
+    // Chi phí chi tiết
+    spend: spend, // Chi phí ngoài kênh truyền thông
+    channelCost: channelCost, // Tổng chi phí các kênh truyền thông
+    cost: totalSpent, // Tổng đã chi = spend + channelCost
     potentialStudentsCount: c.potentialStudentsCount || metrics.potentialStudentsCount || 0,
     newStudentsCount: c.newStudentsCount || metrics.newStudentsCount || 0,
     roi: c.roi || roi,

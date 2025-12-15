@@ -13,6 +13,8 @@ const buildQueryString = (options = {}) => {
     month,
     startMonth,
     endMonth,
+    startDate,
+    endDate,
     sortBy = 'name',
     sortDirection = 'asc'
   } = options;
@@ -20,13 +22,15 @@ const buildQueryString = (options = {}) => {
   const params = new URLSearchParams();
   params.append('page', page.toString());
   params.append('size', size.toString());
-  
+
   if (search) params.append('search', search);
   if (type) params.append('type', type);
   if (status) params.append('status', status);
   if (month) params.append('month', month);
   if (startMonth) params.append('startMonth', startMonth);
   if (endMonth) params.append('endMonth', endMonth);
+  if (startDate) params.append('startDate', startDate);
+  if (endDate) params.append('endDate', endDate);
   if (sortBy) params.append('sortBy', sortBy);
   if (sortDirection) params.append('sortDirection', sortDirection);
 
@@ -79,7 +83,7 @@ export const channelService = {
       params.append('size', size.toString());
       params.append('sortBy', sortBy);
       params.append('sortDirection', sortDirection);
-      
+
       const { data } = await apiRequest(`${API_BASE_URL}/api/channels/${id}/campaigns?${params.toString()}`, {
         method: 'GET'
       });

@@ -260,7 +260,7 @@ exports.getChannelStats = async (req, res) => {
 // Get enriched channels with statistics
 exports.getChannelsWithStats = async (req, res) => {
   try {
-    const { page = 1, size = 10, sortBy, sortDirection } = req.query;
+    const { page = 1, size = 10, sortBy, sortDirection, startDate, endDate } = req.query;
     const pageNum = Math.max(1, Number(page));
     const pageSize = Math.max(1, Number(size));
 
@@ -274,6 +274,13 @@ exports.getChannelsWithStats = async (req, res) => {
     list = applyFilters(list, req.query);
     const totalItems = list.length;
     list = sortItems(list, sortBy, sortDirection);
+
+    // Parse date filters
+    const filterStartDate = startDate ? new Date(startDate) : null;
+    const filterEndDate = endDate ? new Date(endDate) : null;
+    if (filterEndDate) {
+      filterEndDate.setHours(23, 59, 59, 999); // Include the entire end date
+    }
 
     // Enrich channels with statistics
     const campaignRepo = AppDataSource.getRepository('Campaign');
@@ -299,17 +306,31 @@ exports.getChannelsWithStats = async (req, res) => {
         }
       }
 
-      // Lấy campaigns đang chạy của channel
+      // Lấy campaigns của channel
       // Tìm qua CampaignChannel (nhiều kênh cho 1 campaign)
       const campaignChannels = await campaignChannelRepo.find({ where: { channelId: channel.id } });
       const campaignIdsFromChannel = campaignChannels.map(cc => cc.campaignId);
 
       // Lấy campaigns từ CampaignChannel có status = 'running'
+      // Nếu có date filter, lọc những campaigns có thời gian trùng với khoảng lọc
       let runningCampaigns = [];
       if (campaignIdsFromChannel.length > 0) {
         const qb = campaignRepo.createQueryBuilder('campaign');
         qb.where('campaign.id IN (:...ids)', { ids: campaignIdsFromChannel });
         qb.andWhere('campaign.status = :status', { status: 'running' });
+
+        // Apply date filter if provided
+        // Campaign overlaps with filter range if:
+        // campaign.startDate <= filterEndDate AND (campaign.endDate >= filterStartDate OR campaign.endDate IS NULL)
+        if (filterStartDate && filterEndDate) {
+          qb.andWhere('(campaign.startDate IS NULL OR campaign.startDate <= :filterEndDate)', { filterEndDate });
+          qb.andWhere('(campaign.endDate IS NULL OR campaign.endDate >= :filterStartDate)', { filterStartDate });
+        } else if (filterStartDate) {
+          qb.andWhere('(campaign.endDate IS NULL OR campaign.endDate >= :filterStartDate)', { filterStartDate });
+        } else if (filterEndDate) {
+          qb.andWhere('(campaign.startDate IS NULL OR campaign.startDate <= :filterEndDate)', { filterEndDate });
+        }
+
         runningCampaigns = await qb.getMany();
       }
 
@@ -326,7 +347,9 @@ exports.getChannelsWithStats = async (req, res) => {
         runningCampaigns: runningCampaigns.map(c => ({
           id: c.id,
           name: c.name,
-          status: c.status
+          status: c.status,
+          startDate: c.startDate,
+          endDate: c.endDate
         })),
         runningCampaignsCount,
         conversionRate: Number(conversionRate)
