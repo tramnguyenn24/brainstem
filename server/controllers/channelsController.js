@@ -346,15 +346,9 @@ exports.getChannelsWithStats = async (req, res) => {
         qb.andWhere('campaign.status = :status', { status: 'running' });
 
         // Apply date filter if provided
-        // Campaign overlaps with filter range if:
-        // campaign.startDate <= filterEndDate AND (campaign.endDate >= filterStartDate OR campaign.endDate IS NULL)
-        if (filterStartDate && filterEndDate) {
-          qb.andWhere('(campaign.startDate IS NULL OR campaign.startDate <= :filterEndDate)', { filterEndDate });
-          qb.andWhere('(campaign.endDate IS NULL OR campaign.endDate >= :filterStartDate)', { filterStartDate });
-        } else if (filterStartDate) {
-          qb.andWhere('(campaign.endDate IS NULL OR campaign.endDate >= :filterStartDate)', { filterStartDate });
-        } else if (filterEndDate) {
-          qb.andWhere('(campaign.startDate IS NULL OR campaign.startDate <= :filterEndDate)', { filterEndDate });
+        // Filter campaigns where campaign.endDate <= filterEndDate
+        if (filterEndDate) {
+          qb.andWhere('campaign.endDate <= :filterEndDate', { filterEndDate });
         }
 
         runningCampaigns = await qb.getMany();
